@@ -375,8 +375,8 @@ async def get_my_vihars(current_user: dict = Depends(get_current_user)):
 
 # Reports
 @api_router.get("/reports/summary")
-async def get_report_summary(period: str, current_user: dict = Depends(get_current_user)):
-    """Get vihar reports - weekly, monthly, yearly"""
+async def get_report_summary(period: str, user_id: str = None, current_user: dict = Depends(get_current_user)):
+    """Get vihar reports - weekly, monthly, yearly. Admin can get user-wise reports."""
     now = datetime.now(timezone.utc)
     
     # Calculate date range
@@ -391,12 +391,24 @@ async def get_report_summary(period: str, current_user: dict = Depends(get_curre
     
     start_date_str = start_date.isoformat()
     
-    # For admin - all vihars
-    if current_user.get("role") == "admin":
+    # For admin with user_id filter - get specific user's vihars
+    if current_user.get("role") == "admin" and user_id:
+        participations = await db.participations.find(
+            {"user_id": user_id, "created_at": {"$gte": start_date_str}},
+            {"_id": 0}
+        ).to_list(1000)
+        vihar_ids = [p["vihar_id"] for p in participations]
+        vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        
+        # Get user info
+        user_info = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    # For admin without user_id - all vihars
+    elif current_user.get("role") == "admin":
         vihars = await db.vihars.find(
             {"created_at": {"$gte": start_date_str}},
             {"_id": 0}
         ).to_list(1000)
+        user_info = None
     else:
         # For users - only their participated vihars
         participations = await db.participations.find(
@@ -405,6 +417,7 @@ async def get_report_summary(period: str, current_user: dict = Depends(get_curre
         ).to_list(1000)
         vihar_ids = [p["vihar_id"] for p in participations]
         vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        user_info = current_user
     
     total_vihars = len(vihars)
     total_kms = sum(v.get("approx_kms", 0) for v in vihars)
@@ -413,7 +426,8 @@ async def get_report_summary(period: str, current_user: dict = Depends(get_curre
         "period": period,
         "total_vihars": total_vihars,
         "total_kms": total_kms,
-        "vihars": vihars
+        "vihars": vihars,
+        "user_info": user_info
     }
 
 # Report Downloads
