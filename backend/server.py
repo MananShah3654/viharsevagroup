@@ -49,6 +49,7 @@ class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     phone: str
+    name: Optional[str] = None
     photo: Optional[str] = None
     age: Optional[int] = None
     area: Optional[str] = None
