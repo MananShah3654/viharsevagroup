@@ -472,6 +472,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Name</label>
+                    <input
+                      type="text"
+                      value={userForm.name}
+                      onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                      data-testid="user-name-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>Password</label>
                     <input
                       type="password"
