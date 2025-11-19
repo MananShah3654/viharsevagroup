@@ -177,7 +177,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/reports/summary?period=${reportPeriod}`);
+      const url = selectedUserId 
+        ? `/reports/summary?period=${reportPeriod}&user_id=${selectedUserId}`
+        : `/reports/summary?period=${reportPeriod}`;
+      const response = await axiosInstance.get(url);
       setReportData(response.data);
     } catch (error) {
       toast.error('Failed to fetch reports');
@@ -186,14 +189,30 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
+  const handleDeleteVihar = async (viharId) => {
+    if (!window.confirm(t.confirmDelete)) {
+      return;
+    }
+    try {
+      await axiosInstance.delete(`/vihars/${viharId}`);
+      toast.success(t.viharDeleted);
+      fetchVihars();
+    } catch (error) {
+      toast.error('Failed to delete vihar');
+    }
+  };
+
   const handleDownloadPDF = async () => {
     try {
-      const response = await axiosInstance.get(`/reports/download/pdf?period=${reportPeriod}`, {
+      const url = selectedUserId 
+        ? `/reports/download/pdf?period=${reportPeriod}&user_id=${selectedUserId}`
+        : `/reports/download/pdf?period=${reportPeriod}`;
+      const response = await axiosInstance.get(url, {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', `vihar_report_${reportPeriod}_${new Date().toISOString().split('T')[0]}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -206,12 +225,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
 
   const handleDownloadExcel = async () => {
     try {
-      const response = await axiosInstance.get(`/reports/download/excel?period=${reportPeriod}`, {
+      const url = selectedUserId 
+        ? `/reports/download/excel?period=${reportPeriod}&user_id=${selectedUserId}`
+        : `/reports/download/excel?period=${reportPeriod}`;
+      const response = await axiosInstance.get(url, {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', `vihar_report_${reportPeriod}_${new Date().toISOString().split('T')[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
