@@ -108,6 +108,7 @@ class UserCreate(BaseModel):
     car: bool = False
 
 class UserUpdate(BaseModel):
+    name: Optional[str] = None
     photo: Optional[str] = None
     age: Optional[int] = None
     area: Optional[str] = None
