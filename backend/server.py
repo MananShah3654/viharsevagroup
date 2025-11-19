@@ -12,7 +12,6 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-import httpx
 from fastapi.responses import StreamingResponse
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
