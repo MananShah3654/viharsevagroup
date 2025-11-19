@@ -80,6 +80,8 @@ const translations = {
     yearly: 'વાર્ષિક',
     totalVihars: 'કુલ વિહારો',
     totalKms: 'કુલ કિ.મી. કવર કર્યા',
+    downloadPDF: 'PDF ડાઉનલોડ',
+    downloadExcel: 'Excel ડાઉનલોડ',
     viharCreated: 'વિહાર સફળતાપૂર્વક બનાવ્યો!',
     userCreated: 'યુઝર સફળતાપૂર્વક બનાવ્યો!',
     roleUpdated: 'ભૂમિકા અપડેટ થઈ!',
