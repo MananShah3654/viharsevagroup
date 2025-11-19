@@ -214,7 +214,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       });
       toast.success(t.userCreated);
       setShowAddUser(false);
-      setUserForm({ phone: '', password: '', age: '', area: '', address: '', car: false });
+      setUserForm({ phone: '', password: '', name: '', age: '', area: '', address: '', car: false });
       fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create user');
