@@ -32,10 +32,16 @@ security = HTTPBearer()
 
 # MSG91 Config
 MSG91_AUTH_KEY = os.environ.get('MSG91_AUTH_KEY')
-MSG91_BASE_URL = "https://api.msg91.com"
+MSG91_BASE_URL = "https://control.msg91.com/api/v5"
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # ===== MODELS =====
 
@@ -171,9 +177,11 @@ async def send_otp_msg91(phone: str) -> tuple[bool, str]:
     """Send OTP via MSG91 API"""
     try:
         # Format phone number for India
-        clean_phone = phone.replace("+", "").replace(" ", "")
+        clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
         if not clean_phone.startswith("91"):
             clean_phone = "91" + clean_phone
+        
+        logger.info(f"Attempting to send OTP to: {clean_phone}")
         
         headers = {
             "authkey": MSG91_AUTH_KEY,
@@ -182,35 +190,49 @@ async def send_otp_msg91(phone: str) -> tuple[bool, str]:
         
         payload = {
             "mobile": clean_phone,
-            "otp_expiry": "10",
-            "route": "4",
-            "country": "91"
+            "template_id": "your_template_id",  # You may need DLT template ID
+            "otp_expiry": 10,
+            "invisible": 0
         }
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                f"{MSG91_BASE_URL}/api/v5/otp",
+        async with httpx.AsyncClient(timeout=15.0) as http_client:
+            response = await http_client.post(
+                f"{MSG91_BASE_URL}/otp",
                 json=payload,
                 headers=headers
             )
         
+        logger.info(f"MSG91 Response Status: {response.status_code}")
+        logger.info(f"MSG91 Response Body: {response.text}")
+        
         if response.status_code == 200:
             data = response.json()
             if data.get("type") == "success":
+                logger.info(f"OTP sent successfully to {clean_phone}")
                 return True, "OTP sent successfully"
-            return False, data.get("message", "Failed to send OTP")
-        return False, "Failed to send OTP"
+            else:
+                error_msg = data.get("message", "Failed to send OTP")
+                logger.error(f"MSG91 error: {error_msg}")
+                return False, error_msg
+        else:
+            logger.error(f"MSG91 HTTP error: {response.status_code} - {response.text}")
+            return False, "Failed to send OTP. Please try again."
+    except httpx.TimeoutException:
+        logger.error(f"Timeout sending OTP to {phone}")
+        return False, "Request timeout. Please try again."
     except Exception as e:
-        logging.error(f"Error sending OTP: {str(e)}")
-        return False, str(e)
+        logger.error(f"Error sending OTP to {phone}: {str(e)}")
+        return False, f"Error: {str(e)}"
 
 async def verify_otp_msg91(phone: str, otp: str) -> tuple[bool, str]:
     """Verify OTP via MSG91 API"""
     try:
         # Format phone number
-        clean_phone = phone.replace("+", "").replace(" ", "")
+        clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
         if not clean_phone.startswith("91"):
             clean_phone = "91" + clean_phone
+        
+        logger.info(f"Attempting to verify OTP for: {clean_phone}")
         
         headers = {
             "authkey": MSG91_AUTH_KEY,
@@ -222,22 +244,34 @@ async def verify_otp_msg91(phone: str, otp: str) -> tuple[bool, str]:
             "otp": otp
         }
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                f"{MSG91_BASE_URL}/api/v5/otp/verify",
+        async with httpx.AsyncClient(timeout=15.0) as http_client:
+            response = await http_client.get(
+                f"{MSG91_BASE_URL}/otp/verify",
                 params=params,
                 headers=headers
             )
         
+        logger.info(f"MSG91 Verify Response Status: {response.status_code}")
+        logger.info(f"MSG91 Verify Response Body: {response.text}")
+        
         if response.status_code == 200:
             data = response.json()
             if data.get("type") == "success":
+                logger.info(f"OTP verified successfully for {clean_phone}")
                 return True, "OTP verified successfully"
-            return False, data.get("message", "Invalid OTP")
-        return False, "Verification failed"
+            else:
+                error_msg = data.get("message", "Invalid OTP")
+                logger.warning(f"OTP verification failed: {error_msg}")
+                return False, error_msg
+        else:
+            logger.error(f"MSG91 verify HTTP error: {response.status_code}")
+            return False, "Verification failed. Please try again."
+    except httpx.TimeoutException:
+        logger.error(f"Timeout verifying OTP for {phone}")
+        return False, "Request timeout. Please try again."
     except Exception as e:
-        logging.error(f"Error verifying OTP: {str(e)}")
-        return False, str(e)
+        logger.error(f"Error verifying OTP for {phone}: {str(e)}")
+        return False, f"Error: {str(e)}"
 
 # ===== ROUTES =====
 
@@ -260,7 +294,8 @@ async def verify_otp(request: OTPVerify):
         if user:
             # Existing user login
             token = create_access_token({"sub": user["id"]})
-            return TokenResponse(access_token=token, user=user)
+            user_response = {k: v for k, v in user.items() if k != "password_hash"}
+            return TokenResponse(access_token=token, user=user_response)
         else:
             # New user - return verified status
             return {"status": "verified", "message": "OTP verified. Please complete registration."}
@@ -368,10 +403,15 @@ async def update_user_role(role_data: RoleUpdate):
 @api_router.post("/vihars", dependencies=[Depends(get_admin_user)])
 async def create_vihar(vihar_data: ViharCreate, admin: dict = Depends(get_admin_user)):
     """Create new vihar (Admin only)"""
-    vihar = Vihar(**vihar_data.model_dump(), created_by=admin["id"])
-    vihar_dict = vihar.model_dump()
-    await db.vihars.insert_one(vihar_dict)
-    return vihar_dict
+    try:
+        vihar = Vihar(**vihar_data.model_dump(), created_by=admin["id"])
+        vihar_dict = vihar.model_dump()
+        await db.vihars.insert_one(vihar_dict)
+        logger.info(f"Vihar created successfully: {vihar.id}")
+        return vihar_dict
+    except Exception as e:
+        logger.error(f"Error creating vihar: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @api_router.get("/vihars")
 async def get_all_vihars(current_user: dict = Depends(get_current_user)):
@@ -507,12 +547,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_db():
