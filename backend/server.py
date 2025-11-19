@@ -552,7 +552,91 @@ async def get_report_summary(period: str, current_user: dict = Depends(get_curre
         "vihars": vihars
     }
 
-app.include_router(api_router)
+# Report Downloads
+@api_router.get("/reports/download/pdf")
+async def download_pdf_report(period: str, current_user: dict = Depends(get_current_user)):
+    """Download PDF report"""
+    now = datetime.now(timezone.utc)
+    
+    # Calculate date range
+    if period == "weekly":
+        start_date = now - timedelta(days=7)
+    elif period == "monthly":
+        start_date = now - timedelta(days=30)
+    elif period == "yearly":
+        start_date = now - timedelta(days=365)
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid period")
+    
+    start_date_str = start_date.isoformat()
+    
+    # For admin - all vihars, for users - only their vihars
+    if current_user.get("role") == "admin":
+        vihars = await db.vihars.find(
+            {"created_at": {"$gte": start_date_str}},
+            {"_id": 0}
+        ).to_list(1000)
+        report_title = f"Vihar Seva Group - {period.title()} Report (All Users)"
+    else:
+        participations = await db.participations.find(
+            {"user_id": current_user["id"], "created_at": {"$gte": start_date_str}},
+            {"_id": 0}
+        ).to_list(1000)
+        vihar_ids = [p["vihar_id"] for p in participations]
+        vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        user_name = current_user.get("name", current_user.get("phone", "User"))
+        report_title = f"Vihar Report - {user_name} ({period.title()})"
+    
+    total_kms = sum(v.get("approx_kms", 0) for v in vihars)
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title = Paragraph(report_title, styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 0.3 * inch))
+    
+    # Date range
+    date_info = Paragraph(
+        f"Report Period: {start_date.strftime('%d %b %Y')} to {now.strftime('%d %b %Y')}",
+        styles['Normal']
+    )
+    elements.append(date_info)
+    elements.append(Spacer(1, 0.2 * inch))
+    
+    # Table data
+    data = [['Date', 'Route No', 'From → To', 'KMs']]
+    
+    for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):
+        data.append([
+            vihar.get('vihar_date', 'N/A'),
+            vihar.get('route_no', 'N/A'),
+            f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}",
+            str(vihar.get('approx_kms', 0))
+        ])
+    
+    # Add total row
+    data.append(['', '', 'TOTAL KMs:', f"{total_kms:.2f}"])
+    
+    # Create table
+    table = Table(data, colWidths=[1.5*inch, 1.2*inch, 3*inch, 1*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7FA588')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#F5F1E8')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#FDFBF7')]),
+    ]))\n    \n    elements.append(table)\n    elements.append(Spacer(1, 0.3 * inch))\n    \n    # Summary\n    summary = Paragraph(\n        f\"<b>Summary:</b> Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs\",\n        styles['Normal']\n    )\n    elements.append(summary)\n    \n    doc.build(elements)\n    buffer.seek(0)\n    \n    filename = f\"vihar_report_{period}_{now.strftime('%Y%m%d')}.pdf\"\n    return StreamingResponse(\n        buffer,\n        media_type=\"application/pdf\",\n        headers={\"Content-Disposition\": f\"attachment; filename={filename}\"}\n    )\n\n@api_router.get(\"/reports/download/excel\")\nasync def download_excel_report(period: str, current_user: dict = Depends(get_current_user)):\n    \"\"\"Download Excel report\"\"\"\n    now = datetime.now(timezone.utc)\n    \n    # Calculate date range\n    if period == \"weekly\":\n        start_date = now - timedelta(days=7)\n    elif period == \"monthly\":\n        start_date = now - timedelta(days=30)\n    elif period == \"yearly\":\n        start_date = now - timedelta(days=365)\n    else:\n        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=\"Invalid period\")\n    \n    start_date_str = start_date.isoformat()\n    \n    # For admin - all vihars, for users - only their vihars\n    if current_user.get(\"role\") == \"admin\":\n        vihars = await db.vihars.find(\n            {\"created_at\": {\"$gte\": start_date_str}},\n            {\"_id\": 0}\n        ).to_list(1000)\n        report_title = f\"Vihar Seva Group - {period.title()} Report (All Users)\"\n    else:\n        participations = await db.participations.find(\n            {\"user_id\": current_user[\"id\"], \"created_at\": {\"$gte\": start_date_str}},\n            {\"_id\": 0}\n        ).to_list(1000)\n        vihar_ids = [p[\"vihar_id\"] for p in participations]\n        vihars = await db.vihars.find({\"id\": {\"$in\": vihar_ids}}, {\"_id\": 0}).to_list(1000)\n        user_name = current_user.get(\"name\", current_user.get(\"phone\", \"User\"))\n        report_title = f\"Vihar Report - {user_name} ({period.title()})\"\n    \n    total_kms = sum(v.get(\"approx_kms\", 0) for v in vihars)\n    \n    # Create Excel workbook\n    wb = Workbook()\n    ws = wb.active\n    ws.title = \"Vihar Report\"\n    \n    # Title\n    ws.merge_cells('A1:D1')\n    title_cell = ws['A1']\n    title_cell.value = report_title\n    title_cell.font = Font(size=16, bold=True, color=\"FFFFFF\")\n    title_cell.fill = PatternFill(start_color=\"7FA588\", end_color=\"7FA588\", fill_type=\"solid\")\n    title_cell.alignment = Alignment(horizontal=\"center\", vertical=\"center\")\n    ws.row_dimensions[1].height = 30\n    \n    # Date range\n    ws.merge_cells('A2:D2')\n    date_cell = ws['A2']\n    date_cell.value = f\"Report Period: {start_date.strftime('%d %b %Y')} to {now.strftime('%d %b %Y')}\"\n    date_cell.alignment = Alignment(horizontal=\"center\")\n    ws.row_dimensions[2].height = 20\n    \n    # Headers\n    headers = ['Date', 'Route No', 'From → To', 'KMs']\n    for col, header in enumerate(headers, 1):\n        cell = ws.cell(row=4, column=col)\n        cell.value = header\n        cell.font = Font(bold=True, color=\"FFFFFF\")\n        cell.fill = PatternFill(start_color=\"7FA588\", end_color=\"7FA588\", fill_type=\"solid\")\n        cell.alignment = Alignment(horizontal=\"center\", vertical=\"center\")\n    \n    ws.row_dimensions[4].height = 25\n    \n    # Data rows\n    row = 5\n    for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):\n        ws.cell(row=row, column=1, value=vihar.get('vihar_date', 'N/A'))\n        ws.cell(row=row, column=2, value=vihar.get('route_no', 'N/A'))\n        ws.cell(row=row, column=3, value=f\"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}\")\n        ws.cell(row=row, column=4, value=vihar.get('approx_kms', 0))\n        row += 1\n    \n    # Total row\n    total_row = row\n    ws.cell(row=total_row, column=3, value=\"TOTAL KMs:\").font = Font(bold=True)\n    ws.cell(row=total_row, column=4, value=total_kms).font = Font(bold=True)\n    ws.cell(row=total_row, column=3).alignment = Alignment(horizontal=\"right\")\n    \n    # Style total row\n    for col in range(1, 5):\n        ws.cell(row=total_row, column=col).fill = PatternFill(\n            start_color=\"F5F1E8\", end_color=\"F5F1E8\", fill_type=\"solid\"\n        )\n    \n    # Summary row\n    summary_row = total_row + 2\n    ws.merge_cells(f'A{summary_row}:D{summary_row}')\n    summary_cell = ws.cell(row=summary_row, column=1)\n    summary_cell.value = f\"Summary: Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs\"\n    summary_cell.font = Font(bold=True)\n    summary_cell.alignment = Alignment(horizontal=\"center\")\n    \n    # Column widths\n    ws.column_dimensions['A'].width = 15\n    ws.column_dimensions['B'].width = 15\n    ws.column_dimensions['C'].width = 40\n    ws.column_dimensions['D'].width = 12\n    \n    # Save to buffer\n    buffer = BytesIO()\n    wb.save(buffer)\n    buffer.seek(0)\n    \n    filename = f\"vihar_report_{period}_{now.strftime('%Y%m%d')}.xlsx\"\n    return StreamingResponse(\n        buffer,\n        media_type=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\",\n        headers={\"Content-Disposition\": f\"attachment; filename={filename}\"}\n    )\n\napp.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
