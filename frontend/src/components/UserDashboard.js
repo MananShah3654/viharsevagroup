@@ -165,21 +165,23 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   return (
     <div className="dashboard" data-testid="user-dashboard">
       <div className="dashboard-header">
-        <div className="dashboard-header-left">
-          <img src="https://customer-assets.emergentagent.com/job_72a57afd-ffc1-4052-ab3e-887263a4efab/artifacts/lmq07cni_vsg%20group%20logo.png" alt="VSG Logo" />
-          <h1>{t.dashboard}</h1>
-        </div>
-        <div className="dashboard-header-right">
-          <button className="btn-small" onClick={() => setLanguage(language === 'en' ? 'gu' : 'en')} data-testid="language-toggle-dashboard">
-            {language === 'en' ? 'ગુજરાતી' : 'English'}
-          </button>
-          <div className="user-info">
-            <p><strong>{user.phone}</strong></p>
-            <p>{user.area || 'User'}</p>
+        <div className="header-content">
+          <div className="header-left">
+            <img src="https://customer-assets.emergentagent.com/job_72a57afd-ffc1-4052-ab3e-887263a4efab/artifacts/lmq07cni_vsg%20group%20logo.png" alt="VSG Logo" />
+            <h1>{t.dashboard}</h1>
           </div>
-          <button className="btn-small btn-logout" onClick={onLogout} data-testid="logout-btn">
-            {t.logout}
-          </button>
+          <div className="header-right">
+            <button className="btn-small" onClick={() => setLanguage(language === 'en' ? 'gu' : 'en')} data-testid="language-toggle-dashboard">
+              {language === 'en' ? 'ગુજરાતી' : 'English'}
+            </button>
+            <div className="user-info">
+              <p><strong>{user.name || user.phone}</strong></p>
+              <p>{user.area || 'User'}</p>
+            </div>
+            <button className="btn-small btn-logout" onClick={onLogout} data-testid="logout-btn">
+              {t.logout}
+            </button>
+          </div>
         </div>
       </div>
 
