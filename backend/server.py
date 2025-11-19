@@ -185,68 +185,18 @@ async def get_admin_user(current_user: dict = Depends(get_current_user)):
 # ===== ROUTES =====
 
 # Auth Routes
-@api_router.post("/auth/send-otp")
-async def send_otp(request: OTPRequest):
-    """Send OTP to phone number"""
-    success, message = await send_otp_msg91(request.phone)
-    if success:
-        return {"status": "success", "message": message}
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
-
-@api_router.post("/auth/verify-otp")
-async def verify_otp(request: OTPVerify):
-    """Verify OTP"""
-    success, message = await verify_otp_msg91(request.phone, request.otp)
-    if success:
-        # Check if user exists
-        user = await db.users.find_one({"phone": request.phone}, {"_id": 0})
-        if user:
-            # Existing user login
-            token = create_access_token({"sub": user["id"]})
-            user_response = {k: v for k, v in user.items() if k != "password_hash"}
-            return TokenResponse(access_token=token, user=user_response)
-        else:
-            # New user - return verified status
-            return {"status": "verified", "message": "OTP verified. Please complete registration."}
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
-
-@api_router.post("/auth/register", response_model=TokenResponse)
-async def register(user_data: UserCreate):
-    """Register new user after OTP verification"""
-    # Check if user exists
-    existing = await db.users.find_one({"phone": user_data.phone})
-    if existing:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
-    
-    user = User(
-        phone=user_data.phone,
-        password_hash=hash_password(user_data.password),
-        name=user_data.name,
-        photo=user_data.photo,
-        age=user_data.age,
-        area=user_data.area,
-        address=user_data.address,
-        car=user_data.car,
-        role="user"
-    )
-    
-    user_dict = user.model_dump()
-    await db.users.insert_one(user_dict)
-    
-    token = create_access_token({"sub": user.id})
-    user_response = {k: v for k, v in user_dict.items() if k != "password_hash"}
-    return TokenResponse(access_token=token, user=user_response)
-
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(request: LoginRequest):
-    """Admin login with password"""
+    """Login with phone and password"""
     user = await db.users.find_one({"phone": request.phone}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
-    if user.get("role") == "admin" and request.password:
-        if not verify_password(request.password, user.get("password_hash", "")):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
+    if not request.password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password required")
+    
+    if not verify_password(request.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     
     token = create_access_token({"sub": user["id"]})
     user_response = {k: v for k, v in user.items() if k != "password_hash"}
