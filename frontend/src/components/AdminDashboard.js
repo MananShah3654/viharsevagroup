@@ -516,6 +516,16 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <p><strong>{t.sadhuBhagvant}:</strong> {vihar.sadhu_bhagvant}</p>
                     {vihar.wheelchair && <span className="status-badge status-in">♿ {t.wheelchair}</span>}
                     {vihar.luggage && <span className="status-badge status-out">🧳 {t.luggage}</span>}
+                    <div style={{ marginTop: '15px' }}>
+                      <button
+                        className="btn-action btn-delete"
+                        onClick={() => handleDeleteVihar(vihar.id)}
+                        data-testid={`delete-vihar-btn-${vihar.id}`}
+                        style={{ width: '100%' }}
+                      >
+                        {t.deleteVihar}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
