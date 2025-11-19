@@ -80,6 +80,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [profileForm, setProfileForm] = useState({
+    name: user.name || '',
     photo: user.photo || '',
     age: user.age || '',
     area: user.area || '',
