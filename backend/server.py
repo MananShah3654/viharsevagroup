@@ -100,6 +100,7 @@ class LoginRequest(BaseModel):
 class UserCreate(BaseModel):
     phone: str
     password: str
+    name: Optional[str] = None
     photo: Optional[str] = None
     age: Optional[int] = None
     area: Optional[str] = None
