@@ -171,29 +171,33 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const handleCreateVihar = async () => {
     setLoading(true);
     try {
-      await axiosInstance.post('/vihars', {
+      const response = await axiosInstance.post('/vihars', {
         ...viharForm,
         sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant),
         approx_kms: parseFloat(viharForm.approx_kms),
       });
-      toast.success(t.viharCreated);
-      setShowCreateVihar(false);
-      setViharForm({
-        route_no: '',
-        gujarati_date: '',
-        sahebji_name: '',
-        vihar_date: '',
-        vihar_time: '',
-        sadhu_bhagvant: '',
-        wheelchair: false,
-        luggage: false,
-        car_required: false,
-        from_upashray: '',
-        to_upashray: '',
-        approx_kms: '',
-      });
-      fetchVihars();
+      
+      if (response.status === 200) {
+        toast.success(t.viharCreated);
+        setShowCreateVihar(false);
+        setViharForm({
+          route_no: '',
+          gujarati_date: '',
+          sahebji_name: '',
+          vihar_date: '',
+          vihar_time: '',
+          sadhu_bhagvant: '',
+          wheelchair: false,
+          luggage: false,
+          car_required: false,
+          from_upashray: '',
+          to_upashray: '',
+          approx_kms: '',
+        });
+        fetchVihars();
+      }
     } catch (error) {
+      console.error('Error creating vihar:', error);
       toast.error(error.response?.data?.detail || 'Failed to create vihar');
     } finally {
       setLoading(false);
