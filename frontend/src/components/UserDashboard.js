@@ -370,6 +370,15 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                 <input type="text" value={user.phone} disabled />
               </div>
               <div className="form-group">
+                <label>Name</label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  data-testid="profile-name-input"
+                />
+              </div>
+              <div className="form-group">
                 <label>Photo URL</label>
                 <input
                   type="text"
