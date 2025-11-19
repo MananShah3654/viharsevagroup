@@ -695,28 +695,46 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                 </button>
               </div>
             </div>
-            <div className="tabs" style={{ marginBottom: '20px' }}>
-              <button
-                className={`tab-btn ${reportPeriod === 'weekly' ? 'active' : ''}`}
-                onClick={() => setReportPeriod('weekly')}
-                data-testid="weekly-report-btn"
-              >
-                {t.weekly}
-              </button>
-              <button
-                className={`tab-btn ${reportPeriod === 'monthly' ? 'active' : ''}`}
-                onClick={() => setReportPeriod('monthly')}
-                data-testid="monthly-report-btn"
-              >
-                {t.monthly}
-              </button>
-              <button
-                className={`tab-btn ${reportPeriod === 'yearly' ? 'active' : ''}`}
-                onClick={() => setReportPeriod('yearly')}
-                data-testid="yearly-report-btn"
-              >
-                {t.yearly}
-              </button>
+            <div style={{ marginBottom: '20px' }}>
+              <div className="form-group" style={{ maxWidth: '300px', marginBottom: '20px' }}>
+                <label>{t.userWiseReport}</label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  data-testid="user-select"
+                >
+                  <option value="">{t.allUsers}</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name || u.phone} {u.area ? `(${u.area})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="tabs">
+                <button
+                  className={`tab-btn ${reportPeriod === 'weekly' ? 'active' : ''}`}
+                  onClick={() => setReportPeriod('weekly')}
+                  data-testid="weekly-report-btn"
+                >
+                  {t.weekly}
+                </button>
+                <button
+                  className={`tab-btn ${reportPeriod === 'monthly' ? 'active' : ''}`}
+                  onClick={() => setReportPeriod('monthly')}
+                  data-testid="monthly-report-btn"
+                >
+                  {t.monthly}
+                </button>
+                <button
+                  className={`tab-btn ${reportPeriod === 'yearly' ? 'active' : ''}`}
+                  onClick={() => setReportPeriod('yearly')}
+                  data-testid="yearly-report-btn"
+                >
+                  {t.yearly}
+                </button>
+              </div>
             </div>
 
             {loading ? (
