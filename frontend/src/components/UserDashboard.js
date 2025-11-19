@@ -60,6 +60,8 @@ const translations = {
     yearly: 'વાર્ષિક',
     totalVihars: 'કુલ વિહારો',
     totalKms: 'કુલ કિ.મી.',
+    downloadPDF: 'PDF ડાઉનલોડ',
+    downloadExcel: 'Excel ડાઉનલોડ',
     phone: 'ફોન',
     age: 'ઉંમર',
     area: 'વિસ્તાર',
