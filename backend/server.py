@@ -379,6 +379,7 @@ async def create_user_by_admin(user_data: UserCreate):
     user = User(
         phone=user_data.phone,
         password_hash=hash_password(user_data.password),
+        name=user_data.name,
         photo=user_data.photo,
         age=user_data.age,
         area=user_data.area,
