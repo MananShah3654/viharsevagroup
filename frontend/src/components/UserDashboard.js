@@ -25,6 +25,8 @@ const translations = {
     yearly: 'Yearly',
     totalVihars: 'Total Vihars',
     totalKms: 'Total KMs Covered',
+    downloadPDF: 'Download PDF',
+    downloadExcel: 'Download Excel',
     phone: 'Phone',
     age: 'Age',
     area: 'Area',
