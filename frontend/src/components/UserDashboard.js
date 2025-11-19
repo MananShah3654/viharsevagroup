@@ -346,7 +346,27 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div className="card">
-            <h3>{t.reports}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
+              <h3 style={{ margin: 0 }}>{t.reports}</h3>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  className="btn-action btn-edit"
+                  onClick={handleDownloadPDF}
+                  data-testid="download-pdf-btn"
+                  style={{ padding: '10px 20px' }}
+                >
+                  📄 {t.downloadPDF}
+                </button>
+                <button
+                  className="btn-action btn-edit"
+                  onClick={handleDownloadExcel}
+                  data-testid="download-excel-btn"
+                  style={{ padding: '10px 20px', background: '#5A8A68' }}
+                >
+                  📊 {t.downloadExcel}
+                </button>
+              </div>
+            </div>
             <div className="tabs" style={{ marginBottom: '20px' }}>
               <button
                 className={`tab-btn ${reportPeriod === 'weekly' ? 'active' : ''}`}
