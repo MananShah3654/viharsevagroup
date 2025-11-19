@@ -549,8 +549,8 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
     )
 
 @api_router.get("/reports/download/excel")
-async def download_excel_report(period: str, current_user: dict = Depends(get_current_user)):
-    """Download Excel report"""
+async def download_excel_report(period: str, user_id: str = None, current_user: dict = Depends(get_current_user)):
+    """Download Excel report. Admin can download user-wise reports."""
     now = datetime.now(timezone.utc)
     
     # Calculate date range
@@ -565,14 +565,26 @@ async def download_excel_report(period: str, current_user: dict = Depends(get_cu
     
     start_date_str = start_date.isoformat()
     
-    # For admin - all vihars, for users - only their vihars
-    if current_user.get("role") == "admin":
+    # For admin with user_id - get specific user's vihars
+    if current_user.get("role") == "admin" and user_id:
+        participations = await db.participations.find(
+            {"user_id": user_id, "created_at": {"$gte": start_date_str}},
+            {"_id": 0}
+        ).to_list(1000)
+        vihar_ids = [p["vihar_id"] for p in participations]
+        vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        user_info = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        user_name = user_info.get("name", user_info.get("phone", "User"))
+        report_title = f"Vihar Report - {user_name} ({period.title()})"
+    # For admin without user_id - all vihars
+    elif current_user.get("role") == "admin":
         vihars = await db.vihars.find(
             {"created_at": {"$gte": start_date_str}},
             {"_id": 0}
         ).to_list(1000)
         report_title = f"Vihar Seva Group - {period.title()} Report (All Users)"
     else:
+        # For users - only their vihars
         participations = await db.participations.find(
             {"user_id": current_user["id"], "created_at": {"$gte": start_date_str}},
             {"_id": 0}
