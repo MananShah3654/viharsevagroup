@@ -274,6 +274,23 @@ async def create_vihar(vihar_data: ViharCreate, admin: dict = Depends(get_admin_
         logger.error(f"Error creating vihar: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+@api_router.delete("/vihars/{vihar_id}", dependencies=[Depends(get_admin_user)])
+async def delete_vihar(vihar_id: str):
+    """Delete vihar (Admin only)"""
+    # Check if vihar exists
+    vihar = await db.vihars.find_one({"id": vihar_id})
+    if not vihar:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
+    
+    # Delete vihar
+    await db.vihars.delete_one({"id": vihar_id})
+    
+    # Delete associated participations
+    await db.participations.delete_many({"vihar_id": vihar_id})
+    
+    logger.info(f"Vihar deleted successfully: {vihar_id}")
+    return {"status": "success", "message": "Vihar deleted successfully"}
+
 @api_router.get("/vihars")
 async def get_all_vihars(current_user: dict = Depends(get_current_user)):
     """Get all vihars - users see limited details"""
