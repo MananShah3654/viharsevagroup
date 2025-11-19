@@ -38,6 +38,8 @@ const translations = {
     yearly: 'Yearly',
     totalVihars: 'Total Vihars',
     totalKms: 'Total KMs Covered',
+    downloadPDF: 'Download PDF',
+    downloadExcel: 'Download Excel',
     viharCreated: 'Vihar created successfully!',
     userCreated: 'User created successfully!',
     roleUpdated: 'Role updated successfully!',
