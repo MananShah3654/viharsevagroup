@@ -110,6 +110,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [users, setUsers] = useState([]);
   const [reportPeriod, setReportPeriod] = useState('weekly');
   const [reportData, setReportData] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Vihar form
