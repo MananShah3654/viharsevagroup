@@ -116,6 +116,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [userForm, setUserForm] = useState({
     phone: '',
     password: '',
+    name: '',
     age: '',
     area: '',
     address: '',
