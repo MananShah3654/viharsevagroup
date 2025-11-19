@@ -138,6 +138,42 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await axiosInstance.get(`/reports/download/pdf?period=${reportPeriod}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `my_vihar_report_${reportPeriod}_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to download PDF');
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      const response = await axiosInstance.get(`/reports/download/excel?period=${reportPeriod}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `my_vihar_report_${reportPeriod}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Excel downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to download Excel');
+    }
+  };
+
   const handleParticipation = async (viharId, status) => {
     try {
       await axiosInstance.post(`/vihars/${viharId}/participate`, { vihar_id: viharId, status });
