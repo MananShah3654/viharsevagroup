@@ -148,7 +148,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     } else if (activeTab === 'reports') {
       fetchReports();
     }
-  }, [activeTab, reportPeriod]);
+  }, [activeTab, reportPeriod, selectedUserId]);
 
   const fetchVihars = async () => {
     setLoading(true);
