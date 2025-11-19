@@ -38,9 +38,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 security = HTTPBearer()
 
-# MSG91 Config
-MSG91_AUTH_KEY = os.environ.get('MSG91_AUTH_KEY')
-MSG91_BASE_URL = "https://control.msg91.com/api/v5"
+# Removed MSG91 - Simple login with phone/password
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
