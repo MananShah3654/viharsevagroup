@@ -1,7 +1,8 @@
 [build]
   publish = "frontend/build"
-  command = "cd frontend && npm install && npm run build"
+  command = "cd frontend && npm install --legacy-peer-deps && npm run build"
 
+# Redirect all routes to index.html for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
