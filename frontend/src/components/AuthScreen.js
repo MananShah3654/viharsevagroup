@@ -59,7 +59,7 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
 
       <div className="auth-left">
         <div className="logo-hero">
-          <img src="https://customer-assets.emergentagent.com/job_72a57afd-ffc1-4052-ab3e-887263a4efab/artifacts/lmq07cni_vsg%20group%20logo.png" alt="VSG Logo" data-testid="vsg-logo" />
+          <img src="/images/logo_vsg.jpg" alt="VSG Logo" data-testid="vsg-logo" />
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>

@@ -11,11 +11,11 @@ const translations = {
     profile: 'Profile',
     routeNo: 'Route Number',
     gujaratiDate: 'Gujarati Date',
-    sahebjiName: 'Sahebji Name',
+    sahebjiName: 'Shraman Shramani Bhagvant',
     viharDate: 'Vihar Date',
     viharTime: 'Time',
-    fromUpashray: 'From',
-    toUpashray: 'To',
+    fromUpashray: 'Vihar Starting Point',
+    toUpashray: 'Vihar Ending Point',
     approxKms: 'KMs',
     optIn: 'Opt In',
     optOut: 'Opt Out',
@@ -46,11 +46,11 @@ const translations = {
     profile: 'પ્રોફાઇલ',
     routeNo: 'રૂટ નંબર',
     gujaratiDate: 'ગુજરાતી તારીખ',
-    sahebjiName: 'સાહેબજીનું નામ',
+    sahebjiName: 'શ્રમણ શ્રમણી ભગવંત',
     viharDate: 'વિહાર તારીખ',
     viharTime: 'સમય',
-    fromUpashray: 'થી',
-    toUpashray: 'સુધી',
+    fromUpashray: 'વિહાર ની શરૂઆત',
+    toUpashray: 'વિહાર ની પૂર્ણાહુતિ',
     approxKms: 'કિ.મી.',
     optIn: 'જોડાઓ',
     optOut: 'છોડો',
@@ -118,7 +118,9 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('/vihars/user/my-vihars');
-      setMyVihars(response.data);
+      // Backend now only returns opted-in vihars, but filter here as well for safety
+      const optedInVihars = response.data.filter(vihar => vihar.user_status === 'in');
+      setMyVihars(optedInVihars);
     } catch (error) {
       toast.error('Failed to fetch my vihars');
     } finally {
@@ -178,10 +180,13 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     try {
       await axiosInstance.post(`/vihars/${viharId}/participate`, { vihar_id: viharId, status });
       toast.success(t.participationUpdated);
+      // Refresh both tabs to ensure consistency
       if (activeTab === 'allVihars') {
         fetchAllVihars();
-      } else {
+      } else if (activeTab === 'myVihars') {
         fetchMyVihars();
+        // Also refresh all vihars to update status everywhere
+        fetchAllVihars();
       }
     } catch (error) {
       toast.error('Failed to update participation');
@@ -208,7 +213,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       <div className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <img src="https://customer-assets.emergentagent.com/job_72a57afd-ffc1-4052-ab3e-887263a4efab/artifacts/lmq07cni_vsg%20group%20logo.png" alt="VSG Logo" />
+            <img src="/images/logo_vsg.jpg" alt="VSG Logo" />
             <h1>{t.dashboard}</h1>
           </div>
           <div className="header-right">
@@ -288,20 +293,30 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                       </span>
                     )}
                     
-                    <div className="btn-group">
+                    <div className="btn-group" style={{ marginTop: '15px' }}>
                       <button
-                        className="btn-in"
+                        className={`btn-in ${vihar.user_status === 'in' ? 'active' : ''}`}
                         onClick={() => handleParticipation(vihar.id, 'in')}
+                        disabled={vihar.user_status === 'in'}
                         data-testid={`opt-in-btn-${vihar.id}`}
+                        style={{
+                          opacity: vihar.user_status === 'in' ? 0.6 : 1,
+                          cursor: vihar.user_status === 'in' ? 'not-allowed' : 'pointer'
+                        }}
                       >
-                        {t.optIn}
+                        {vihar.user_status === 'in' ? '✓ ' : ''}{t.optIn}
                       </button>
                       <button
-                        className="btn-out"
+                        className={`btn-out ${vihar.user_status === 'out' ? 'active' : ''}`}
                         onClick={() => handleParticipation(vihar.id, 'out')}
+                        disabled={vihar.user_status === 'out'}
                         data-testid={`opt-out-btn-${vihar.id}`}
+                        style={{
+                          opacity: vihar.user_status === 'out' ? 0.6 : 1,
+                          cursor: vihar.user_status === 'out' ? 'not-allowed' : 'pointer'
+                        }}
                       >
-                        {t.optOut}
+                        {vihar.user_status === 'out' ? '✓ ' : ''}{t.optOut}
                       </button>
                     </div>
                   </div>
@@ -336,6 +351,20 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <span className={`status-badge ${vihar.user_status === 'in' ? 'status-in' : 'status-out'}`}>
                       {vihar.user_status === 'in' ? t.optIn : t.optOut}
                     </span>
+                    <div className="btn-group" style={{ marginTop: '15px' }}>
+                      <button
+                        className={`btn-out ${vihar.user_status === 'out' ? 'active' : ''}`}
+                        onClick={() => handleParticipation(vihar.id, 'out')}
+                        disabled={vihar.user_status === 'out'}
+                        data-testid={`opt-out-btn-${vihar.id}`}
+                        style={{
+                          opacity: vihar.user_status === 'out' ? 0.6 : 1,
+                          cursor: vihar.user_status === 'out' ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {vihar.user_status === 'out' ? '✓ ' : ''}{t.optOut}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

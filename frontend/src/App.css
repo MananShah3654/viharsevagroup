@@ -115,14 +115,26 @@ h1, h2, h3, h4, h5, h6 {
 .logo-hero {
   text-align: center;
   max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-hero img {
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
   margin-bottom: 30px;
   filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.08));
+  background: transparent;
+  /* Remove white background effect - blend mode helps remove white backgrounds */
+  mix-blend-mode: darken;
+  /* Alternative: use screen mode for lighter backgrounds */
+  /* mix-blend-mode: screen; */
+  /* Ensure smooth rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .logo-hero h1 {
@@ -525,6 +537,25 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px);
 }
 
+.btn-in.active,
+.btn-out.active {
+  opacity: 0.8;
+  box-shadow: 0 0 0 2px rgba(127, 165, 136, 0.3);
+}
+
+.btn-in:disabled,
+.btn-out:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-in:disabled:hover,
+.btn-out:disabled:hover {
+  transform: none;
+  background: inherit;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -691,8 +722,8 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 480px) {
   .logo-hero img {
-    width: 140px;
-    height: 140px;
+    width: 160px;
+    height: 160px;
   }
   
   .tabs {
