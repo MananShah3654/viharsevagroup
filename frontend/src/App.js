@@ -7,8 +7,33 @@ import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
 import { Toaster } from './components/ui/sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+// Backend URL configuration
+// For Vercel: Backend is on the same domain, so we use relative path in production
+// For local development: Use localhost
+const getBackendURL = () => {
+  // If explicitly set via environment variable, use it
+  if (process.env.REACT_APP_BACKEND_URL) {
+    return process.env.REACT_APP_BACKEND_URL;
+  }
+  
+  // In production on Vercel, backend is on same domain
+  if (process.env.NODE_ENV === 'production' && window.location.hostname.includes('vercel.app')) {
+    return window.location.origin; // Same domain as frontend
+  }
+  
+  // Development default
+  return 'http://localhost:8001';
+};
+
+const BACKEND_URL = getBackendURL();
 const API = `${BACKEND_URL}/api`;
+
+// Log for debugging (will show in browser console)
+if (process.env.NODE_ENV === 'production' && !process.env.REACT_APP_BACKEND_URL && !window.location.hostname.includes('vercel.app')) {
+  console.warn('⚠️ Backend URL not configured. Using same domain (Vercel).');
+} else {
+  console.log('Backend URL:', BACKEND_URL);
+}
 
 export const axiosInstance = axios.create({
   baseURL: API,
@@ -21,7 +46,24 @@ axiosInstance.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Add response interceptor for better error handling
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle network errors (common on mobile)
+    if (!error.response) {
+      if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+        console.error('Network error - check backend URL:', BACKEND_URL);
+        error.userMessage = 'Network error. Please check your internet connection.';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 function App() {
   const [user, setUser] = useState(null);
@@ -29,13 +71,25 @@ function App() {
   const [language, setLanguage] = useState('en'); // en or gu
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+    try {
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (token && savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // Clear potentially corrupted data
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch (e) {
+        // Ignore errors when clearing
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const handleLogin = (userData, token) => {

@@ -32,21 +32,50 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!phone || !password) {
       toast.error('Please enter phone number and password');
       return;
     }
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
     try {
       const response = await axiosInstance.post('/auth/login', { phone, password });
       toast.success(t.loginSuccess);
       onLogin(response.data.user, response.data.access_token);
     } catch (error) {
-      toast.error(error.response?.data?.detail || t.errorOccurred);
+      console.error('Login error:', error);
+      let errorMessage = t.errorOccurred;
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.userMessage) {
+        errorMessage = error.userMessage;
+      } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        // Check if backend URL might be misconfigured
+        const backendUrl = window.location.hostname.includes('vercel.app') 
+          ? 'Backend should be on same domain. Check Vercel deployment.'
+          : '';
+        errorMessage = `Network error. ${backendUrl} Please check your internet connection and try again.`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle button click for mobile compatibility
+  const handleButtonClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleLogin(e);
   };
 
   return (
@@ -71,7 +100,7 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
           <p style={{ textAlign: 'center', color: '#757575', marginBottom: '24px', fontSize: '0.95rem' }}>
             {t.enterCredentials}
           </p>
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} noValidate>
             <div className="form-group">
               <label>{t.phoneNumber}</label>
               <input
@@ -81,6 +110,9 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
                 placeholder="9429617099"
                 data-testid="phone-input"
                 required
+                autoComplete="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
             <div className="form-group">
@@ -91,9 +123,23 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 data-testid="password-input"
                 required
+                autoComplete="current-password"
               />
             </div>
-            <button className="btn btn-primary" type="submit" disabled={loading} data-testid="login-btn">
+            <button 
+              className="btn btn-primary" 
+              type="submit" 
+              disabled={loading} 
+              data-testid="login-btn"
+              onClick={handleButtonClick}
+              onTouchStart={(e) => {
+                // Ensure touch events work on mobile
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+            >
               {loading ? 'Logging in...' : t.login}
             </button>
           </form>
