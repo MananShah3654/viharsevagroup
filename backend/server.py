@@ -110,6 +110,19 @@ class LoginRequest(BaseModel):
     phone: str
     password: Optional[str] = None
 
+class RegisterRequest(BaseModel):
+    phone: str
+    password: str
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if not v.isdigit():
+            raise ValueError('Password must contain only digits')
+        if len(v) != 4:
+            raise ValueError('Password must be exactly 4 digits')
+        return v
+
 class UserCreate(BaseModel):
     phone: str
     password: str
@@ -212,6 +225,29 @@ async def login(request: LoginRequest):
     
     token = create_access_token({"sub": user["id"]})
     user_response = {k: v for k, v in user.items() if k != "password_hash"}
+    return TokenResponse(access_token=token, user=user_response)
+
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register(request: RegisterRequest):
+    """Register new user with phone and 4-digit password"""
+    # Check if user already exists
+    existing = await db.users.find_one({"phone": request.phone}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this phone number already exists")
+    
+    # Create new user
+    user = User(
+        phone=request.phone,
+        password_hash=hash_password(request.password),
+        role="user"
+    )
+    
+    user_dict = user.model_dump()
+    await db.users.insert_one(user_dict)
+    
+    # Create token and return user
+    token = create_access_token({"sub": user.id})
+    user_response = {k: v for k, v in user_dict.items() if k != "password_hash"}
     return TokenResponse(access_token=token, user=user_response)
 
 # User Routes

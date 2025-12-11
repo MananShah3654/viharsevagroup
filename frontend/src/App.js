@@ -3,6 +3,7 @@ import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthScreen from './components/AuthScreen';
+import RegisterScreen from './components/RegisterScreen';
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
 import { Toaster } from './components/ui/sonner';
@@ -127,6 +128,20 @@ function App() {
                 )
               ) : (
                 <AuthScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              user ? (
+                user.role === 'admin' ? (
+                  <Navigate to="/admin" replace />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              ) : (
+                <RegisterScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
               )
             }
           />

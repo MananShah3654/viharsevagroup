@@ -9,6 +9,14 @@
       "destination": "/backend/api/index.py"
     },
     {
+      "source": "/ping",
+      "destination": "/backend/api/index.py"
+    },
+    {
+      "source": "/health",
+      "destination": "/backend/api/index.py"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

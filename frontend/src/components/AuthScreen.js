@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../App';
 import { toast } from 'sonner';
 
@@ -27,6 +28,7 @@ const translations = {
 
 const AuthScreen = ({ onLogin, language, setLanguage }) => {
   const t = translations[language];
+  const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -142,6 +144,9 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
             >
               {loading ? 'Logging in...' : t.login}
             </button>
+            <p className="text-link">
+              Don't have an account? <span onClick={() => navigate('/register')}>Register</span>
+            </p>
           </form>
         </div>
       </div>
