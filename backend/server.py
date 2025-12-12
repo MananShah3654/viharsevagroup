@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi.responses import StreamingResponse
+from starlette.responses import Response
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
@@ -48,12 +49,6 @@ security = HTTPBearer()
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
-
-# Add OPTIONS handler for CORS preflight
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    """Handle OPTIONS requests for CORS preflight"""
-    return {"message": "OK"}
 
 logging.basicConfig(
     level=logging.INFO,
@@ -1068,6 +1063,35 @@ app.add_middleware(
 
 # Include API router AFTER CORS middleware
 app.include_router(api_router)
+
+# Add explicit OPTIONS handlers for all routes (after middleware and router)
+from starlette.responses import Response
+
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle OPTIONS requests for CORS preflight - must be after CORS middleware"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
+
+@api_router.options("/{full_path:path}")
+async def api_options_handler(full_path: str):
+    """Handle OPTIONS requests for API routes"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
 
 @app.on_event("startup")
 async def startup_db():
