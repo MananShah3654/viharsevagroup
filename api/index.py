@@ -25,10 +25,9 @@ try:
     from mangum import Mangum
     
     # Create Mangum handler for Vercel serverless functions
-    # Use lifespan="on" to allow startup/shutdown events
-    # This is important for MongoDB connection initialization
-    # Export directly - Vercel should handle Mangum handlers correctly
-    handler = Mangum(app, lifespan="on")
+    # Use lifespan="off" - Vercel may have issues with lifespan="on"
+    # MongoDB connection will be established on first request
+    handler = Mangum(app, lifespan="off")
     
     print("Handler created successfully")
     print(f"Handler type: {type(handler)}")
