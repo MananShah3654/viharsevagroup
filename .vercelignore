@@ -1,60 +1,61 @@
 # Exclude unnecessary files from Vercel deployment
-# Frontend files (not needed for serverless function)
-frontend/
-frontend/**
-!frontend/build
 
-# Node modules (huge, not needed for Python function)
-node_modules/
-**/node_modules/
+# Frontend build artifacts
+frontend/build/
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
 
-# Python cache
-__pycache__/
-**/__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+# Backend development files
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.venv/
+backend/venv/
+backend/env/
+backend/.env.local
+backend/test_*.py
+backend/Procfile
+backend/railway.json
+backend/render.yaml
+backend/start.sh
+backend/vercel.json
 
-# Build artifacts
-*.so
-*.egg
-*.egg-info/
-dist/
-build/
-!frontend/build
+# Development tools
+tests/
+*.md
+!README.md
 
 # Git
 .git/
 .gitignore
 
-# Environment files
-.env
-.env.local
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
+logs/
 
-# Documentation
-*.md
-!README.md
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 
-# Tests
-tests/
-**/test_*.py
-
-# Backend files not needed for serverless function
-backend/__pycache__/
-backend/api/
-backend/Procfile
-backend/railway.json
-backend/render.yaml
-backend/start.sh
-backend/test_mongo.py
-backend/vercel.json
-
-# Other unnecessary files
-*.json
-!package.json
-!package-lock.json
-!vercel.json
-!api/requirements.txt
-
+# Virtual environments
+venv/
+ENV/
+env/
