@@ -1,0 +1,60 @@
+# Exclude unnecessary files from Vercel deployment
+# Frontend files (not needed for serverless function)
+frontend/
+frontend/**
+!frontend/build
+
+# Node modules (huge, not needed for Python function)
+node_modules/
+**/node_modules/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+!frontend/build
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.local
+*.log
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+tests/
+**/test_*.py
+
+# Backend files not needed for serverless function
+backend/__pycache__/
+backend/api/
+backend/Procfile
+backend/railway.json
+backend/render.yaml
+backend/start.sh
+backend/test_mongo.py
+backend/vercel.json
+
+# Other unnecessary files
+*.json
+!package.json
+!package-lock.json
+!vercel.json
+!api/requirements.txt
+
