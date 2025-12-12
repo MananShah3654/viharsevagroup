@@ -1065,8 +1065,6 @@ app.add_middleware(
 app.include_router(api_router)
 
 # Add explicit OPTIONS handlers for all routes (after middleware and router)
-from starlette.responses import Response
-
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str):
     """Handle OPTIONS requests for CORS preflight - must be after CORS middleware"""
