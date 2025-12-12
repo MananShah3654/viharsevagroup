@@ -9,6 +9,8 @@ const translations = {
     subtitle: 'Serving Jain Monks with Safety and Devotion',
     register: 'Register',
     phoneNumber: 'Phone Number',
+    name: 'Name',
+    area: 'Area',
     password: 'Password (4 digits)',
     confirmPassword: 'Confirm Password',
     registerSuccess: 'Registration successful! Redirecting to login...',
@@ -19,13 +21,17 @@ const translations = {
     passwordMismatch: 'Passwords do not match',
     passwordInvalid: 'Password must be exactly 4 digits',
     phoneRequired: 'Phone number is required',
+    nameRequired: 'Name is required',
+    areaRequired: 'Area is required',
     passwordRequired: 'Password is required',
   },
   gu: {
     title: '\u0ab5\u0abf\u0ab9\u0abe\u0ab0 \u0ab8\u0ac7\u0ab5\u0abe \u0a97\u0acd\u0ab0\u0ac1\u0aaa',
-    subtitle: '\u0a9c\u0ac8\u0aa8 \u0ab8\u0abe\u0aa7\u0ac1\u0a93\u0aa8\u0ac0 \u0ab8\u0ac1\u0ab0\u0a95\u0acd\u0ab7\u0abe \u0a85\u0aa8\u0ac7 \u0aad\u0a95\u0acd\u0aa4\u0abf \u0ab8\u0abe\u0aa5\u0ac7 \u0ab8\u0ac7\u0ab5\u0abe',
+    subtitle: '\u0a9c\u0ac8\u0aa8 \u0ab6\u0acd\u0ab0\u0aae\u0aa3 \u0ab6\u0acd\u0ab0\u0aae\u0aa3\u0ac0 \u0aad\u0a97\u0ab5\u0a82\u0aa4\u0aa8\u0ac0 \u0ab8\u0ac1\u0ab0\u0a95\u0acd\u0ab7\u0abe \u0a85\u0aa8\u0ac7 \u0aad\u0a95\u0acd\u0aa4\u0abf \u0ab8\u0abe\u0aa5\u0ac7 \u0ab8\u0ac7\u0ab5\u0abe',
     register: '\u0ab0\u0ac7\u0a9c\u0abf\u0ab8\u0acd\u0a9f\u0ab0',
     phoneNumber: '\u0aab\u0acb\u0aa8 \u0aa8\u0a82\u0aac\u0ab0',
+    name: '\u0aa8\u0abe\u0aae',
+    area: '\u0ab5\u0abf\u0ab8\u0acd\u0aa4\u0abe\u0ab0',
     password: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 (4 \u0a85\u0a82\u0a95)',
     confirmPassword: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 \u0aa8\u0abf\u0ab6\u0acd\u0a9a\u0abf\u0aa4 \u0a95\u0ab0\u0acb',
     registerSuccess: '\u0ab0\u0ac7\u0a9c\u0abf\u0ab8\u0acd\u0a9f\u0ab0\u0ac7\u0ab6\u0aa8 \u0ab8\u0aab\u0ab3! \u0ab2\u0acb\u0a97\u0abf\u0aa8 \u0aa8\u0ac7 \u0aa6\u0abf\u0ab0\u0acd\u0a97\u0ac7 \u0a95\u0ab0\u0ab5\u0abe \u0aae\u0abe\u0a9f\u0ac7...',
@@ -36,6 +42,8 @@ const translations = {
     passwordMismatch: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 \u0aae\u0abf\u0ab2\u0aa4\u0ac7 \u0aa8\u0ab9\u0ac0',
     passwordInvalid: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 \u0aae\u0ac7\u0a82 \u0a95\u0ac7\u0ab5\u0ab2 \u0aae\u0ac7\u0a82 4 \u0a85\u0a82\u0a95 \u0ab9\u0acb\u0ab5\u0abe \u0a9c\u0acb\u0aaf\u0ac7',
     phoneRequired: '\u0aab\u0acb\u0aa8 \u0aa8\u0a82\u0aac\u0ab0 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
+    nameRequired: '\u0aa8\u0abe\u0aae \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
+    areaRequired: '\u0ab5\u0abf\u0ab8\u0acd\u0aa4\u0abe\u0ab0 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
     passwordRequired: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
   },
 };
@@ -44,6 +52,8 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
   const t = translations[language];
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [area, setArea] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,6 +68,16 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
     // Validation
     if (!phone) {
       toast.error(t.phoneRequired);
+      return;
+    }
+    
+    if (!name || name.trim() === '') {
+      toast.error(t.nameRequired);
+      return;
+    }
+    
+    if (!area || area.trim() === '') {
+      toast.error(t.areaRequired);
       return;
     }
     
@@ -82,12 +102,14 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
     let registrationSucceeded = false;
     
     try {
-      const response = await axiosInstance.post('/auth/register', { phone, password });
+      const response = await axiosInstance.post('/auth/register', { phone, password, name: name.trim(), area: area.trim() });
       
       // If we reach here, registration was successful
       registrationSucceeded = true;
       toast.success(t.registerSuccess);
       setPhone('');
+      setName('');
+      setArea('');
       setPassword('');
       setConfirmPassword('');
       // Redirect to login screen after a short delay
@@ -184,6 +206,30 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength="10"
+              />
+            </div>
+            <div className="form-group">
+              <label>{t.name}</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                data-testid="register-name-input"
+                required
+                autoComplete="name"
+              />
+            </div>
+            <div className="form-group">
+              <label>{t.area}</label>
+              <input
+                type="text"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                placeholder="Enter your area"
+                data-testid="register-area-input"
+                required
+                autoComplete="address-level2"
               />
             </div>
             <div className="form-group">

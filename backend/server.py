@@ -67,6 +67,9 @@ class User(BaseModel):
     area: Optional[str] = None
     address: Optional[str] = None
     car: bool = False
+    blood_group: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    date_of_birth: Optional[str] = None
     role: str = "user"  # admin or user
     password_hash: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -84,6 +87,7 @@ class Vihar(BaseModel):
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
+    activa: bool = False
     from_upashray: str
     to_upashray: str
     approx_kms: float
@@ -113,6 +117,8 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     phone: str
     password: str
+    name: str
+    area: str
     
     @field_validator('password')
     @classmethod
@@ -153,6 +159,7 @@ class ViharCreate(BaseModel):
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
+    activa: bool = False
     from_upashray: str
     to_upashray: str
     approx_kms: float
@@ -239,6 +246,8 @@ async def register(request: RegisterRequest):
     user = User(
         phone=request.phone,
         password_hash=hash_password(request.password),
+        name=request.name,
+        area=request.area,
         role="user"
     )
     
@@ -367,6 +376,7 @@ def parse_whatsapp_message(message: str) -> dict:
             "luggage": False,
             "dori": False,
             "car_required": False,
+            "activa": False,
             "from_upashray": "",
             "to_upashray": "",
             "approx_kms": 0.0

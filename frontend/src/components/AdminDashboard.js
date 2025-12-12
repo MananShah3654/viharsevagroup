@@ -25,6 +25,7 @@ const translations = {
     luggage: 'Luggage',
     dori: 'Dori',
     carRequired: 'Car Required',
+    activa: 'Activa',
     fromUpashray: 'Vihar Starting Point',
     toUpashray: 'Vihar Ending Point',
     approxKms: 'Approx KMs',
@@ -166,6 +167,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     address: '',
     car: false,
     photo: '',
+    blood_group: '',
+    emergency_contact: '',
+    date_of_birth: '',
   });
   const [photoPreview, setPhotoPreview] = useState(null);
 
@@ -306,6 +310,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       luggage: false,
       dori: false,
       car_required: false,
+      activa: false,
       from_upashray: '',
       to_upashray: '',
       approx_kms: '',
@@ -360,6 +365,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       luggage: vihar.luggage || false,
       dori: vihar.dori || false,
       car_required: vihar.car_required || false,
+      activa: vihar.activa || false,
       from_upashray: vihar.from_upashray || '',
       to_upashray: vihar.to_upashray || '',
       approx_kms: vihar.approx_kms || '',
@@ -405,7 +411,19 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const resetUserForm = () => {
-    setUserForm({ phone: '', password: '', name: '', age: '', area: '', address: '', car: false });
+    setUserForm({ 
+      phone: '', 
+      password: '', 
+      name: '', 
+      age: '', 
+      area: '', 
+      address: '', 
+      car: false,
+      photo: '',
+      blood_group: '', 
+      emergency_contact: '', 
+      date_of_birth: '' 
+    });
   };
 
   const handlePhotoChange = (e) => {
@@ -444,6 +462,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       address: user.address || '',
       car: user.car || false,
       photo: user.photo || '',
+      blood_group: user.blood_group || '',
+      emergency_contact: user.emergency_contact || '',
+      date_of_birth: user.date_of_birth || '',
     });
     setPhotoPreview(user.photo || null);
     setShowAddUser(true);
@@ -462,6 +483,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         address: userForm.address || null,
         car: userForm.car,
         photo: userForm.photo || null,
+        blood_group: userForm.blood_group || null,
+        emergency_contact: userForm.emergency_contact || null,
+        date_of_birth: userForm.date_of_birth || null,
       };
       
       // Only include password if it's provided
@@ -762,6 +786,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     />
                     <label>{t.carRequired}</label>
                   </div>
+                  <div className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      checked={viharForm.activa}
+                      onChange={(e) => setViharForm({ ...viharForm, activa: e.target.checked })}
+                      data-testid="activa-checkbox"
+                    />
+                    <label>{t.activa}</label>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                   <button className="btn btn-primary" onClick={editingViharId ? handleUpdateVihar : handleCreateVihar} disabled={loading} data-testid="submit-vihar-btn">
@@ -802,6 +835,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       {vihar.luggage && <span className="status-badge status-out">🧳 {t.luggage}</span>}
                       {vihar.dori && <span className="status-badge status-in">📦 {t.dori}</span>}
                       {vihar.car_required && <span className="status-badge status-out">🚗 {t.carRequired}</span>}
+                      {vihar.activa && <span className="status-badge status-out">🏍️ {t.activa}</span>}
                     </div>
                     <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
                       <button
@@ -907,6 +941,36 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       data-testid="user-car-checkbox"
                     />
                     <label>Has Car</label>
+                  </div>
+                  <div className="form-group">
+                    <label>Blood Group</label>
+                    <input
+                      type="text"
+                      value={userForm.blood_group}
+                      onChange={(e) => setUserForm({ ...userForm, blood_group: e.target.value })}
+                      placeholder="A+, B+, O+, etc."
+                      data-testid="user-blood-group-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Emergency Contact No</label>
+                    <input
+                      type="tel"
+                      value={userForm.emergency_contact}
+                      onChange={(e) => setUserForm({ ...userForm, emergency_contact: e.target.value.replace(/\D/g, '') })}
+                      placeholder="9429617099"
+                      maxLength="10"
+                      data-testid="user-emergency-contact-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Date of Birth</label>
+                    <input
+                      type="date"
+                      value={userForm.date_of_birth}
+                      onChange={(e) => setUserForm({ ...userForm, date_of_birth: e.target.value })}
+                      data-testid="user-date-of-birth-input"
+                    />
                   </div>
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label>Photo</label>

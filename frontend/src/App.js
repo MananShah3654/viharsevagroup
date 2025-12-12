@@ -6,6 +6,7 @@ import AuthScreen from './components/AuthScreen';
 import RegisterScreen from './components/RegisterScreen';
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
+import LandingPage from './components/LandingPage';
 import { Toaster } from './components/ui/sonner';
 
 // Backend URL configuration
@@ -17,8 +18,8 @@ const getBackendURL = () => {
     return process.env.REACT_APP_BACKEND_URL;
   }
   
-  // In production on Vercel, backend is on same domain
-  if (process.env.NODE_ENV === 'production' && window.location.hostname.includes('vercel.app')) {
+  // In production (any domain), backend is on same domain
+  if (process.env.NODE_ENV === 'production') {
     return window.location.origin; // Same domain as frontend
   }
   
@@ -117,6 +118,12 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/landing"
+            element={
+              <LandingPage language={language} setLanguage={setLanguage} />
+            }
+          />
           <Route
             path="/"
             element={
