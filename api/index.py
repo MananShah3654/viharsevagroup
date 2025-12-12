@@ -27,15 +27,8 @@ try:
     # Create Mangum handler for Vercel serverless functions
     # Use lifespan="on" to allow startup/shutdown events
     # This is important for MongoDB connection initialization
-    mangum_handler = Mangum(app, lifespan="on")
-    
-    # Wrap handler in a callable function to ensure Vercel compatibility
-    def handler(event, context):
-        """Vercel-compatible handler wrapper"""
-        return mangum_handler(event, context)
-    
-    # Ensure handler is callable
-    handler.__name__ = 'handler'
+    # Export directly - Vercel should handle Mangum handlers correctly
+    handler = Mangum(app, lifespan="on")
     
     print("Handler created successfully")
     print(f"Handler type: {type(handler)}")
@@ -58,13 +51,7 @@ except Exception as e:
             "traceback": traceback.format_exc()
         }
     
-    mangum_error_handler = Mangum(error_app, lifespan="off")
-    
-    def handler(event, context):
-        """Vercel-compatible error handler wrapper"""
-        return mangum_error_handler(event, context)
-    
-    handler.__name__ = 'handler'
+    handler = Mangum(error_app, lifespan="off")
 
 # Export handler for Vercel - ensure it's at module level
 __all__ = ['handler']
