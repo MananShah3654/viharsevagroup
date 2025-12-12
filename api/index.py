@@ -1,7 +1,10 @@
 """
 Vercel serverless function entry point for FastAPI
 This file is used when deploying to Vercel
-Uses Mangum adapter to convert FastAPI ASGI app to AWS Lambda handler
+
+Vercel supports ASGI apps directly, so we can use the FastAPI app directly
+without needing Mangum. However, we need to wrap it properly for Vercel's
+Python runtime which expects a specific handler format.
 """
 import sys
 import os
@@ -24,13 +27,33 @@ try:
     from server import app
     from mangum import Mangum
     
-    # Create Mangum handler for Vercel serverless functions
-    # Use lifespan="off" - Vercel may have issues with lifespan="on"
-    # MongoDB connection will be established on first request
-    handler = Mangum(app, lifespan="off")
+    # Create Mangum handler - this converts ASGI to AWS Lambda format
+    # Vercel's Python runtime runs on AWS Lambda under the hood
+    mangum_handler = Mangum(app, lifespan="off")
+    
+    # Vercel expects a handler function that takes (event, context)
+    # The Mangum instance IS callable, but Vercel's detection code
+    # tries to inspect it and fails. We need to wrap it in a way
+    # that Vercel can properly detect and invoke.
+    
+    # Solution: Create a simple wrapper function that Vercel can recognize
+    async def handler(event, context):
+        """
+        Vercel-compatible handler wrapper.
+        
+        Vercel's Python runtime expects a function (not a class instance)
+        that can be called with (event, context). Mangum instances are
+        callable, but Vercel's type detection fails when inspecting them.
+        
+        This wrapper ensures Vercel can properly detect and invoke the handler.
+        """
+        # Mangum handlers are async callables that take (event, context)
+        # We need to await the result since Mangum returns a coroutine
+        return await mangum_handler(event, context)
     
     print("Handler created successfully")
-    print(f"Handler type: {type(handler)}")
+    print(f"Mangum handler type: {type(mangum_handler)}")
+    print(f"Wrapper handler type: {type(handler)}")
     print(f"Handler callable: {callable(handler)}")
     
 except Exception as e:
@@ -50,7 +73,10 @@ except Exception as e:
             "traceback": traceback.format_exc()
         }
     
-    handler = Mangum(error_app, lifespan="off")
+    mangum_error_handler = Mangum(error_app, lifespan="off")
+    
+    async def handler(event, context):
+        return await mangum_error_handler(event, context)
 
 # Export handler for Vercel - ensure it's at module level
 __all__ = ['handler']
