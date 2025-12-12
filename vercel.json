@@ -3,12 +3,11 @@
   "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install --legacy-peer-deps",
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "backend/**"
     }
-  ],
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
