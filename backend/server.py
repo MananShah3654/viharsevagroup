@@ -49,6 +49,12 @@ security = HTTPBearer()
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Add OPTIONS handler for CORS preflight
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle OPTIONS requests for CORS preflight"""
+    return {"message": "OK"}
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -1043,9 +1049,8 @@ async def ping():
     """Simple ping endpoint"""
     return {"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-app.include_router(api_router)
-
-# CORS configuration - allow all origins in development, specific origins in production
+# CORS configuration - MUST be added BEFORE including routers
+# This ensures CORS headers are applied to all routes including OPTIONS preflight
 cors_origins = os.environ.get('CORS_ORIGINS', '*')
 if cors_origins == '*':
     allow_origins = ['*']
@@ -1056,9 +1061,13 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=allow_origins,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Include API router AFTER CORS middleware
+app.include_router(api_router)
 
 @app.on_event("startup")
 async def startup_db():

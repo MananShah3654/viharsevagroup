@@ -31,8 +31,9 @@ const BACKEND_URL = getBackendURL();
 const API = `${BACKEND_URL}/api`;
 
 // Log for debugging (will show in browser console)
-if (process.env.NODE_ENV === 'production' && !process.env.REACT_APP_BACKEND_URL && !window.location.hostname.includes('vercel.app')) {
-  console.warn('⚠️ Backend URL not configured. Using same domain (Vercel).');
+if (process.env.NODE_ENV === 'production') {
+  console.log('Backend URL:', BACKEND_URL);
+  console.log('API Base URL:', API);
 } else {
   console.log('Backend URL:', BACKEND_URL);
 }
