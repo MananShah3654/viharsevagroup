@@ -3,23 +3,24 @@
   "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install --legacy-peer-deps",
-  "functions": {
-    "backend/api/index.py": {
-      "includeFiles": "backend/**"
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
     }
-  },
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/api/index.py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/ping",
-      "destination": "/backend/api/index.py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/health",
-      "destination": "/backend/api/index.py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",
