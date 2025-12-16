@@ -16,7 +16,7 @@ const translations = {
   },
   gu: {
     title: '\u0ab5\u0abf\u0ab9\u0abe\u0ab0 \u0ab8\u0ac7\u0ab5\u0abe \u0a97\u0acd\u0ab0\u0ac1\u0aaa',
-    subtitle: '\u0a9c\u0ac8\u0aa8 \u0ab6\u0acd\u0ab0\u0aae\u0aa3 \u0ab6\u0acd\u0ab0\u0aae\u0aa3\u0ac0 \u0aad\u0a97\u0ab5\u0a82\u0aa4\u0aa8\u0ac0 \u0ab8\u0ac1\u0ab0\u0a95\u0acd\u0ab7\u0abe \u0a85\u0aa8\u0ac7 \u0aad\u0a95\u0acd\u0aa4\u0abf \u0ab8\u0abe\u0aa5\u0ac7 \u0ab8\u0ac7\u0ab5\u0abe',
+    subtitle: 'જૈન શ્રમણ શ્રમણી ભગવંતોની સુરક્ષા અને ભક્તિ સાથે સેવા',
     login: '\u0ab2\u0acb\u0a97\u0abf\u0aa8',
     phoneNumber: '\u0aab\u0acb\u0aa8 \u0aa8\u0a82\u0aac\u0ab0',
     password: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1',
@@ -90,7 +90,13 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
 
       <div className="auth-left">
         <div className="logo-hero">
-          <img src="/images/logo_vsg.jpg" alt="VSG Logo" data-testid="vsg-logo" />
+          <img 
+            src="/images/logo_vsg.png" 
+            alt="VSG Logo" 
+            data-testid="vsg-logo"
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
+          />
           <h1>{t.title}</h1>
           <p>{t.subtitle}</p>
         </div>
@@ -108,13 +114,17 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(value);
+                }}
                 placeholder="9429617099"
                 data-testid="phone-input"
                 required
                 autoComplete="tel"
                 inputMode="numeric"
-                pattern="[0-9]*"
+                pattern="[0-9]{10}"
+                maxLength="10"
               />
             </div>
             <div className="form-group">

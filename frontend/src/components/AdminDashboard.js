@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../App';
 import { toast } from 'sonner';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 const translations = {
   en: {
@@ -14,11 +29,11 @@ const translations = {
     copyToWhatsApp: 'Copy to WhatsApp',
     routeNo: 'Route Number',
     gujaratiDate: 'Gujarati Calendar Date',
-    sahebjiName: 'Sadhu Bhagvant',
+    sahebjiName: 'Bhagvant Name',
     viharDate: 'Vihar Date',
     viharTime: 'Vihar Time',
-    sadhuBhagvant: 'Sadhu Bhagvant Count',
-    sadhvijiBhagvant: 'Sadhviji Bhagvant Count',
+    sadhuBhagvant: 'Sadhu Bhagvant Thana',
+    sadhvijiBhagvant: 'Sadhviji Bhagvant Thana',
     wheelchair: 'Wheelchair Required',
     luggage: 'Luggage',
     dori: 'Dori',
@@ -80,27 +95,57 @@ const translations = {
     next: 'Next',
     page: 'Page',
     of: 'of',
+    calculateDistance: 'Calculate',
+    calculating: 'Calculating...',
+    calculateDistanceHint: 'Enter both locations and click Calculate to auto-fill distance',
+    home: 'Home',
+    totalUsers: 'Total Users',
+    totalVihars: 'Total Vihars',
+    totalKmsCovered: 'Total KMs Covered',
+    activeParticipants: 'Active Participants',
+    viewDetails: 'View Details',
+    viharsThisMonth: 'Vihars This Month',
+    usersThisMonth: 'New Users This Month',
+    participationRate: 'Participation Rate',
+    topRoutes: 'Top Routes',
+    recentVihars: 'Recent Vihars',
+    userGrowth: 'User Growth',
+    viharTrends: 'Vihar Trends',
   },
   gu: {
     dashboard: 'એડમિન ડેશબોર્ડ',
+    home: 'હોમ',
     vihars: 'વિહારો',
     users: 'યુઝર્સ',
     reports: 'રિપોર્ટ્સ',
+    totalUsers: 'કુલ યુઝર્સ',
+    totalVihars: 'કુલ વિહારો',
+    totalKmsCovered: 'કુલ કિ.મી. કવર',
+    activeParticipants: 'સક્રિય સહભાગીઓ',
+    viewDetails: 'વિગતો જુઓ',
+    viharsThisMonth: 'આ મહિનાના વિહારો',
+    usersThisMonth: 'આ મહિનાના નવા યુઝર્સ',
+    participationRate: 'સહભાગિતા દર',
+    topRoutes: 'ટોપ રૂટ્સ',
+    recentVihars: 'તાજેતરના વિહારો',
+    userGrowth: 'યુઝર વૃદ્ધિ',
+    viharTrends: 'વિહાર ટ્રેન્ડ્સ',
     createVihar: 'નવો વિહાર બનાવો',
     updateVihar: 'વિહાર અપડેટ કરો',
     editVihar: 'સંપાદન કરો',
     copyToWhatsApp: 'WhatsApp માં કોપી કરો',
     routeNo: 'રૂટ નંબર',
     gujaratiDate: 'ગુજરાતી કેલેન્ડર તારીખ',
-    sahebjiName: 'સાધુ ભગવંત',
+    sahebjiName: 'ભગવંત નામ',
     viharDate: 'વિહાર તારીખ',
     viharTime: 'વિહાર સમય',
-    sadhuBhagvant: 'સાધુ ભગવંત સંખ્યા',
-    sadhvijiBhagvant: 'સાધ્વીજી ભગવંત સંખ્યા',
+    sadhuBhagvant: 'સાધુ ભગવંત થાના',
+    sadhvijiBhagvant: 'સાધ્વીજી ભગવંત થાના',
     wheelchair: 'વ્હીલચેર જરૂરી',
     luggage: 'સામાન',
     dori: 'ડોરી',
     carRequired: 'કાર જરૂરી',
+    activa: 'એકટીવા જરૂરી',
     fromUpashray: 'વિહાર ની શરૂઆત',
     toUpashray: 'વિહાર ની પૂર્ણાહુતિ',
     approxKms: 'અંદાજિત કિ.મી.',
@@ -159,12 +204,28 @@ const translations = {
     next: 'આગળ',
     page: 'પાનું',
     of: 'માંથી',
+    calculateDistance: 'ગણતરી કરો',
+    calculating: 'ગણતરી કરી રહ્યા છીએ...',
+    calculateDistanceHint: 'બંને સ્થાન દાખલ કરો અને રોડ અંતર મેળવવા માટે ગણતરી કરો પર ક્લિક કરો ',
+    home: 'હોમ',
+    totalUsers: 'કુલ યુઝર્સ',
+    totalVihars: 'કુલ વિહારો',
+    totalKmsCovered: 'કુલ કિ.મી. કવર',
+    activeParticipants: 'સક્રિય સહભાગીઓ',
+    viewDetails: 'વિગતો જુઓ',
+    viharsThisMonth: 'આ મહિનાના વિહારો',
+    usersThisMonth: 'આ મહિનાના નવા યુઝર્સ',
+    participationRate: 'સહભાગિતા દર',
+    topRoutes: 'ટોપ રૂટ્સ',
+    recentVihars: 'તાજેતરના વિહારો',
+    userGrowth: 'યુઝર વૃદ્ધિ',
+    viharTrends: 'વિહાર ટ્રેન્ડ્સ',
   },
 };
 
 const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const t = translations[language];
-  const [activeTab, setActiveTab] = useState('vihars');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateVihar, setShowCreateVihar] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [vihars, setVihars] = useState([]);
@@ -480,6 +541,172 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     return text;
   };
 
+  // Geocode location using Google Maps Geocoding API (more accurate)
+  // All locations are in Ahmedabad, so we append ", Ahmedabad" automatically
+  const geocodeLocationGoogle = async (location) => {
+    const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+    
+    if (!GOOGLE_MAPS_API_KEY) {
+      // Fallback to OpenStreetMap if no API key
+      return geocodeLocationOSM(location);
+    }
+
+    try {
+      const cleanLocation = location.trim();
+      const searchQuery = cleanLocation.toLowerCase().includes('ahmedabad') 
+        ? `${cleanLocation}, Gujarat, India`
+        : `${cleanLocation}, Ahmedabad, Gujarat, India`;
+      
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${GOOGLE_MAPS_API_KEY}&region=in`
+      );
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const location_data = data.results[0].geometry.location;
+        return {
+          lat: location_data.lat,
+          lon: location_data.lng,
+          formatted_address: data.results[0].formatted_address
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Google Geocoding error:', error);
+      // Fallback to OSM
+      return geocodeLocationOSM(location);
+    }
+  };
+
+  // Fallback: Geocode using OpenStreetMap Nominatim API
+  const geocodeLocationOSM = async (location) => {
+    try {
+      const cleanLocation = location.trim();
+      const searchQuery = cleanLocation.toLowerCase().includes('ahmedabad') 
+        ? `${cleanLocation}, Gujarat, India`
+        : `${cleanLocation}, Ahmedabad, Gujarat, India`;
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'ViharSevaGroup/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon)
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('OSM Geocoding error:', error);
+      return null;
+    }
+  };
+
+  // Calculate road distance using Google Maps Distance Matrix API (like Google Maps)
+  const calculateRoadDistance = async (fromLocation, toLocation) => {
+    const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+    
+    if (!GOOGLE_MAPS_API_KEY) {
+      // Fallback: Calculate straight-line distance if no API key
+      const fromCoords = await geocodeLocationOSM(fromLocation);
+      const toCoords = await geocodeLocationOSM(toLocation);
+      
+      if (!fromCoords || !toCoords) {
+        return null;
+      }
+      
+      // Haversine formula for straight-line distance
+      const R = 6371;
+      const dLat = (toCoords.lat - fromCoords.lat) * Math.PI / 180;
+      const dLon = (toCoords.lon - fromCoords.lon) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(fromCoords.lat * Math.PI / 180) * Math.cos(toCoords.lat * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    try {
+      // Prepare addresses with Ahmedabad
+      const fromQuery = fromLocation.toLowerCase().includes('ahmedabad') 
+        ? `${fromLocation}, Gujarat, India`
+        : `${fromLocation}, Ahmedabad, Gujarat, India`;
+      const toQuery = toLocation.toLowerCase().includes('ahmedabad') 
+        ? `${toLocation}, Gujarat, India`
+        : `${toLocation}, Ahmedabad, Gujarat, India`;
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(fromQuery)}&destinations=${encodeURIComponent(toQuery)}&units=metric&key=${GOOGLE_MAPS_API_KEY}&region=in`
+      );
+      
+      const data = await response.json();
+      
+      if (data.status === 'OK' && 
+          data.rows && 
+          data.rows.length > 0 && 
+          data.rows[0].elements && 
+          data.rows[0].elements.length > 0) {
+        const element = data.rows[0].elements[0];
+        
+        if (element.status === 'OK') {
+          // Return distance in kilometers
+          return element.distance.value / 1000; // Convert meters to km
+        } else {
+          console.error('Distance Matrix error:', element.status);
+          return null;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Google Distance Matrix error:', error);
+      return null;
+    }
+  };
+
+  // Calculate KMs between from and to locations using Google Maps (road distance)
+  const handleCalculateDistance = async () => {
+    if (!viharForm.from_upashray || !viharForm.to_upashray) {
+      toast.error('Please enter both "From" and "To" locations');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      toast.info('Calculating road distance...');
+      
+      // Use Google Maps Distance Matrix API for accurate road distance
+      const distance = await calculateRoadDistance(
+        viharForm.from_upashray,
+        viharForm.to_upashray
+      );
+
+      if (distance === null || distance === undefined) {
+        toast.error('Could not calculate distance. Please check the location names and try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Round to 1 decimal place
+      const roundedDistance = Math.round(distance * 10) / 10;
+      
+      setViharForm({ ...viharForm, approx_kms: roundedDistance.toString() });
+      toast.success(`Road distance calculated: ${roundedDistance} km`);
+    } catch (error) {
+      console.error('Distance calculation error:', error);
+      toast.error('Failed to calculate distance. Please enter manually.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get day of week in Gujarati
   const getGujaratiDay = (dateString) => {
     const date = new Date(dateString);
@@ -783,7 +1010,14 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleEditUser = (user) => {
-    setEditingUserId(user.id);
+    // Use the most reliable ID - prefer id, fallback to _id, then phone
+    const userId = user.id || user._id || user.phone;
+    if (!userId) {
+      toast.error('Cannot edit user: Invalid user ID');
+      return;
+    }
+    
+    setEditingUserId(userId);
     setUserForm({
       phone: user.phone || '',
       password: '', // Don't populate password
@@ -805,22 +1039,33 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const handleUpdateUser = async () => {
     if (!editingUserId) return;
     
+    // Validation
+    if (!userForm.name || userForm.name.trim() === '') {
+      toast.error('Please enter user name');
+      return;
+    }
+    
+    if (userForm.password && (userForm.password.length !== 4 || !/^\d+$/.test(userForm.password))) {
+      toast.error('Password must be exactly 4 digits');
+      return;
+    }
+    
     setLoading(true);
     try {
       const updateData = {
-        name: userForm.name || null,
+        name: userForm.name.trim(),
         age: userForm.age ? parseInt(userForm.age) : null,
-        area: userForm.area || null,
-        address: userForm.address || null,
+        area: userForm.area ? userForm.area.trim() : null,
+        address: userForm.address ? userForm.address.trim() : null,
         car: userForm.car,
         photo: userForm.photo || null,
-        blood_group: userForm.blood_group || null,
+        blood_group: userForm.blood_group ? userForm.blood_group.trim() : null,
         emergency_contact: userForm.emergency_contact || null,
         date_of_birth: userForm.date_of_birth || null,
       };
       
       // Only include password if it's provided
-      if (userForm.password) {
+      if (userForm.password && userForm.password.trim() !== '') {
         updateData.password = userForm.password;
       }
       
@@ -851,8 +1096,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDeleteUser = async (user) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+    
+    // Use the most reliable ID - prefer id, fallback to _id, then phone
+    const userId = user.id || user._id || user.phone;
+    if (!userId) {
+      toast.error('Cannot delete user: Invalid user ID');
       return;
     }
     
@@ -869,11 +1121,40 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleAddUser = async () => {
+    // Validation
+    if (!userForm.phone || userForm.phone.length !== 10) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+    
+    if (!userForm.name || userForm.name.trim() === '') {
+      toast.error('Please enter user name');
+      return;
+    }
+    
+    if (!userForm.password || userForm.password.length !== 4 || !/^\d+$/.test(userForm.password)) {
+      toast.error('Password must be exactly 4 digits');
+      return;
+    }
+    
+    if (!userForm.area || userForm.area.trim() === '') {
+      toast.error('Please enter user area');
+      return;
+    }
+    
     setLoading(true);
     try {
       await axiosInstance.post('/admin/users', {
         ...userForm,
+        phone: userForm.phone,
+        password: userForm.password,
+        name: userForm.name.trim(),
+        area: userForm.area.trim(),
         age: userForm.age ? parseInt(userForm.age) : null,
+        address: userForm.address ? userForm.address.trim() : null,
+        blood_group: userForm.blood_group ? userForm.blood_group.trim() : null,
+        emergency_contact: userForm.emergency_contact || null,
+        date_of_birth: userForm.date_of_birth || null,
       });
       toast.success(t.userCreated);
       setShowAddUser(false);
@@ -886,89 +1167,74 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
-  const handleUpdateRole = async (userId, newRole) => {
-    // Debug: Log the user ID being sent
-    console.log('=== ROLE UPDATE DEBUG ===');
-    console.log('Received userId:', userId, 'type:', typeof userId);
-    console.log('New role:', newRole);
-    console.log('All users in state:', users.map(u => ({ 
-      id: u.id, 
-      _id: u._id, 
-      phone: u.phone, 
-      name: u.name,
-      role: u.role 
-    })));
+  const handleUpdateRole = async (phoneOrId, newRole) => {
+    setLoading(true);
     
     try {
-      // Find the user in the current list
+      // Find the user in the current list - phone number is the primary identifier
       const userToUpdate = users.find(u => {
-        // Try multiple matching methods
-        return u.id === userId || 
-               u._id === userId || 
-               String(u.id) === String(userId) || 
-               String(u._id) === String(userId) ||
-               u.phone === userId;
+        // Try to match by phone first (most reliable)
+        if (u.phone === phoneOrId) return true;
+        // Then try by id
+        if (u.id === phoneOrId || String(u.id) === String(phoneOrId)) return true;
+        // Then try by _id
+        if (u._id === phoneOrId || String(u._id) === String(phoneOrId)) return true;
+        return false;
       });
       
       if (!userToUpdate) {
-        console.error('User not found in frontend state. userId:', userId);
-        console.error('Available user IDs:', users.map(u => ({ id: u.id, _id: u._id, phone: u.phone })));
-        toast.error('User not found in current list. Please refresh and try again.');
+        console.error('User not found in frontend state. Identifier:', phoneOrId);
+        console.error('Available users:', users.map(u => ({ 
+          id: u.id, 
+          _id: u._id, 
+          phone: u.phone,
+          name: u.name 
+        })));
+        toast.error('User not found. Please refresh the page and try again.');
+        setLoading(false);
         return;
       }
       
-      console.log('Found user in frontend:', userToUpdate);
-      
-      // Use phone number as primary identifier (most reliable)
-      // Also send user_id as fallback
+      // Phone number is the most reliable identifier - always use it
       const userPhone = userToUpdate.phone;
-      const actualUserId = userToUpdate.id || userToUpdate._id || userPhone;
+      if (!userPhone) {
+        toast.error('Cannot update role: User phone number is missing');
+        setLoading(false);
+        return;
+      }
       
-      console.log('Sending role update with phone:', userPhone, 'user_id:', actualUserId);
+      // Get user_id as fallback (prefer id, then _id, then phone)
+      const actualUserId = userToUpdate.id || userToUpdate._id || userPhone;
       
       // Send both phone (primary) and user_id (fallback) for maximum reliability
       const requestPayload = { 
         phone: userPhone, // Primary identifier - most reliable
-        user_id: actualUserId, // Fallback identifier
+        user_id: String(actualUserId), // Fallback identifier as string
         role: newRole 
       };
-      console.log('Request payload:', requestPayload);
+      
+      console.log('Updating role:', { phone: userPhone, user_id: actualUserId, role: newRole, user: userToUpdate.name || userToUpdate.phone });
       
       const response = await axiosInstance.put('/admin/users/role', requestPayload);
       
-      console.log('Response received:', response);
-      
       if (response && response.data) {
-        console.log('Role update successful:', response.data);
         toast.success(t.roleUpdated);
         // Refresh the user list after a short delay to ensure backend has updated
         setTimeout(() => {
           fetchUsers();
         }, 500);
       } else {
-        console.error('No response data received');
         toast.error('Failed to update role: No response from server');
       }
     } catch (error) {
-      console.error('=== ROLE UPDATE ERROR ===');
-      console.error('Error object:', error);
-      console.error('Error message:', error.message);
-      console.error('Error response:', error.response);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
-      console.error('Requested userId:', userId);
-      console.error('Current users:', users.map(u => ({ 
-        id: u.id, 
-        _id: u._id, 
-        phone: u.phone, 
-        name: u.name 
-      })));
-      
+      console.error('Role update error:', error);
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.message || 
                           error.message || 
                           'Failed to update role';
       toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -977,7 +1243,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       <div className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <img src="/images/logo_vsg.jpg" alt="VSG Logo" />
+            <img src="/images/logo_vsg.png" alt="VSG Logo" />
             <h1>{t.dashboard}</h1>
           </div>
           <div className="header-right">
@@ -997,6 +1263,13 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
 
       <div className="dashboard-content">
         <div className="tabs">
+          <button
+            className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+            data-testid="dashboard-tab"
+          >
+            {t.home}
+          </button>
           <button
             className={`tab-btn ${activeTab === 'vihars' ? 'active' : ''}`}
             onClick={() => setActiveTab('vihars')}
@@ -1019,6 +1292,315 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             {t.reports}
           </button>
         </div>
+
+        {/* Dashboard Home Tab */}
+        {activeTab === 'dashboard' && (
+          <div style={{ padding: '20px 0' }}>
+            {/* Statistics Cards */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+              gap: '20px', 
+              marginBottom: '30px' 
+            }}>
+              {/* Total Users Card */}
+              <div 
+                className="card" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                }}
+                onClick={() => setActiveTab('users')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                }}
+              >
+                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalUsers}</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>{users.length}</div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
+              </div>
+
+              {/* Total Vihars Card */}
+              <div 
+                className="card" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 4px 15px rgba(245, 87, 108, 0.4)'
+                }}
+                onClick={() => setActiveTab('vihars')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(245, 87, 108, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(245, 87, 108, 0.4)';
+                }}
+              >
+                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalVihars}</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>{vihars.length}</div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
+              </div>
+
+              {/* Total KMs Card */}
+              <div 
+                className="card" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 4px 15px rgba(79, 172, 254, 0.4)'
+                }}
+                onClick={() => setActiveTab('reports')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(79, 172, 254, 0.4)';
+                }}
+              >
+                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalKmsCovered}</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {vihars.reduce((sum, v) => sum + (parseFloat(v.approx_kms) || 0), 0).toFixed(1)}
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
+              </div>
+
+              {/* Active Participants Card */}
+              <div 
+                className="card" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 4px 15px rgba(67, 233, 123, 0.4)'
+                }}
+                onClick={() => setActiveTab('vihars')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(67, 233, 123, 0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(67, 233, 123, 0.4)';
+                }}
+              >
+                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.activeParticipants}</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {users.filter(u => u.role === 'user').length}
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
+              </div>
+            </div>
+
+            {/* Charts Section */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', 
+              gap: '20px', 
+              marginBottom: '30px' 
+            }}>
+              {/* Vihars Chart */}
+              <div className="card" style={{ padding: '20px' }}>
+                <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.viharTrends}</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={(() => {
+                    // Group vihars by month
+                    const monthData = {};
+                    vihars.forEach(vihar => {
+                      if (vihar.vihar_date) {
+                        const date = new Date(vihar.vihar_date);
+                        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        monthData[monthKey] = (monthData[monthKey] || 0) + 1;
+                      }
+                    });
+                    return Object.entries(monthData)
+                      .sort()
+                      .slice(-6)
+                      .map(([month, count]) => ({
+                        month: month.split('-')[1] + '/' + month.split('-')[0].slice(2),
+                        vihars: count
+                      }));
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="vihars" fill="#7FA588" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* User Growth Chart */}
+              <div className="card" style={{ padding: '20px' }}>
+                <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.userGrowth}</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={(() => {
+                    // Group users by month
+                    const monthData = {};
+                    users.forEach(user => {
+                      if (user.created_at) {
+                        const date = new Date(user.created_at);
+                        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        monthData[monthKey] = (monthData[monthKey] || 0) + 1;
+                      }
+                    });
+                    return Object.entries(monthData)
+                      .sort()
+                      .slice(-6)
+                      .map(([month, count]) => ({
+                        month: month.split('-')[1] + '/' + month.split('-')[0].slice(2),
+                        users: count
+                      }));
+                  })()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="users" stroke="#667eea" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Route Distribution and Recent Vihars */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+              gap: '20px' 
+            }}>
+              {/* Top Routes Pie Chart */}
+              <div className="card" style={{ padding: '20px' }}>
+                <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.topRoutes}</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={(() => {
+                        const routeCounts = {};
+                        vihars.forEach(vihar => {
+                          if (vihar.route_no) {
+                            routeCounts[vihar.route_no] = (routeCounts[vihar.route_no] || 0) + 1;
+                          }
+                        });
+                        return Object.entries(routeCounts)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 5)
+                          .map(([route, count]) => ({ name: `Route ${route}`, value: count }));
+                      })()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {(() => {
+                        const COLORS = ['#7FA588', '#667eea', '#f5576c', '#4facfe', '#43e97b'];
+                        return (() => {
+                          const routeCounts = {};
+                          vihars.forEach(vihar => {
+                            if (vihar.route_no) {
+                              routeCounts[vihar.route_no] = (routeCounts[vihar.route_no] || 0) + 1;
+                            }
+                          });
+                          return Object.entries(routeCounts)
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 5)
+                            .map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ));
+                        })();
+                      })()}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Recent Vihars List */}
+              <div className="card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ color: '#2C3E50', margin: 0 }}>{t.recentVihars}</h3>
+                  <button 
+                    className="btn btn-small"
+                    onClick={() => setActiveTab('vihars')}
+                    style={{ fontSize: '12px', padding: '6px 12px' }}
+                  >
+                    {t.viewDetails}
+                  </button>
+                </div>
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {vihars
+                    .sort((a, b) => new Date(b.vihar_date + ' ' + b.vihar_time) - new Date(a.vihar_date + ' ' + a.vihar_time))
+                    .slice(0, 5)
+                    .map((vihar) => (
+                      <div 
+                        key={vihar.id}
+                        style={{
+                          padding: '12px',
+                          marginBottom: '10px',
+                          background: '#f8f9fa',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onClick={() => {
+                          setActiveTab('vihars');
+                          handleEditVihar(vihar);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#e9ecef';
+                          e.currentTarget.style.borderColor = '#7FA588';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f8f9fa';
+                          e.currentTarget.style.borderColor = '#e0e0e0';
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontWeight: '600', color: '#2C3E50', marginBottom: '4px' }}>
+                              Route {vihar.route_no} - {vihar.vihar_date}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#666' }}>
+                              {vihar.from_upashray} → {vihar.to_upashray}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#7FA588' }}>
+                            {vihar.approx_kms} km
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {vihars.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                      No vihars yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Vihars Tab */}
         {activeTab === 'vihars' && (
@@ -1112,13 +1694,40 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                   </div>
                   <div className="form-group">
                     <label>{t.approxKms}</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={viharForm.approx_kms}
-                      onChange={(e) => setViharForm({ ...viharForm, approx_kms: e.target.value })}
-                      data-testid="approx-kms-input"
-                    />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={viharForm.approx_kms}
+                        onChange={(e) => setViharForm({ ...viharForm, approx_kms: e.target.value })}
+                        data-testid="approx-kms-input"
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCalculateDistance}
+                        disabled={loading || !viharForm.from_upashray || !viharForm.to_upashray}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#7FA588',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 'not-allowed' : 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap',
+                          opacity: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 0.6 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                        title="Calculate distance between From and To locations"
+                      >
+                        {loading ? t.calculating : t.calculateDistance}
+                      </button>
+                    </div>
+                    <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                      {t.calculateDistanceHint}
+                    </small>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
@@ -1520,9 +2129,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <input
                       type="tel"
                       value={userForm.phone}
-                      onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setUserForm({ ...userForm, phone: value });
+                      }}
                       disabled={!!editingUserId}
+                      placeholder="9429617099"
+                      maxLength="10"
+                      pattern="[0-9]{10}"
+                      inputMode="numeric"
                       data-testid="user-phone-input"
+                      required
                     />
                   </div>
                   <div className="form-group">
@@ -1539,10 +2156,22 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <input
                       type="password"
                       value={userForm.password}
-                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                      placeholder={editingUserId ? 'Leave blank to keep current password' : ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setUserForm({ ...userForm, password: value });
+                      }}
+                      placeholder={editingUserId ? 'Leave blank to keep current password' : '1234'}
+                      maxLength="4"
+                      pattern="[0-9]{4}"
+                      inputMode="numeric"
+                      required={!editingUserId}
                       data-testid="user-password-input"
                     />
+                    {!editingUserId && (
+                      <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                        Must be exactly 4 digits
+                      </small>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>{t.age}</label>
@@ -1631,7 +2260,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                         border: '2px solid #ddd'
                       }}>
                         <img 
-                          src="/images/logo_vsg.jpg" 
+                          src="/images/logo_vsg.png" 
                           alt="VSG Background" 
                           style={{
                             position: 'absolute',
@@ -1749,8 +2378,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginationData.users.map((u) => (
-                        <tr key={u.id} data-testid={`user-row-${u.id}`}>
+                      {paginationData.users.map((u) => {
+                        const userId = u.id || u._id || u.phone;
+                        return (
+                        <tr key={userId} data-testid={`user-row-${userId}`}>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               {u.photo && (
@@ -1763,7 +2394,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                   flexShrink: 0
                                 }}>
                                   <img 
-                                    src="/images/logo_vsg.jpg" 
+                                    src="/images/logo_vsg.png" 
                                     alt="VSG Background" 
                                     style={{
                                       position: 'absolute',
@@ -1823,8 +2454,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                 <>
                                   <button
                                     className="btn-action btn-delete"
-                                    onClick={() => handleDeleteUser(u.id)}
-                                    data-testid={`delete-user-btn-${u.id}`}
+                                    onClick={() => handleDeleteUser(u)}
+                                    data-testid={`delete-user-btn-${u.id || u._id || u.phone}`}
                                     style={{ fontSize: '0.85rem', padding: '6px 12px' }}
                                   >
                                     {t.delete}
@@ -1832,12 +2463,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                   <button
                                     className="btn-action btn-edit"
                                     onClick={() => {
+                                      if (!u.phone) {
+                                        toast.error('Cannot update role: User phone number is missing');
+                                        return;
+                                      }
                                       if (window.confirm(`Are you sure you want to make ${u.name || u.phone} an admin? They will have full admin access.`)) {
-                                        handleUpdateRole(u.id, 'admin');
+                                        handleUpdateRole(u.phone, 'admin');
                                       }
                                     }}
-                                    data-testid={`make-admin-btn-${u.id}`}
+                                    data-testid={`make-admin-btn-${u.id || u._id || u.phone}`}
                                     style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#1a237e', color: 'white' }}
+                                    disabled={loading}
                                   >
                                     {t.makeAdmin}
                                   </button>
@@ -1848,12 +2484,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                 <button
                                   className="btn-action btn-delete"
                                   onClick={() => {
+                                    if (!u.phone) {
+                                      toast.error('Cannot update role: User phone number is missing');
+                                      return;
+                                    }
                                     if (window.confirm(`Are you sure you want to remove admin access from ${u.name || u.phone}?`)) {
-                                      handleUpdateRole(u.id, 'user');
+                                      handleUpdateRole(u.phone, 'user');
                                     }
                                   }}
-                                  data-testid={`make-user-btn-${u.id}`}
+                                  data-testid={`make-user-btn-${u.id || u._id || u.phone}`}
                                   style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                                  disabled={loading}
                                 >
                                   {t.makeUser}
                                 </button>
@@ -1861,7 +2502,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
 

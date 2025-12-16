@@ -2,232 +2,525 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: linear-gradient(180deg, var(--warm-white, #FFFCF7) 0%, var(--cream, #FAF6F1) 100%);
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
-/* Full Width Banner */
-.landing-full-banner {
+/* Header */
+.landing-header {
   width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+  padding: 20px 0;
+  background: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 252, 247, 0.9);
 }
 
-.landing-banner-full {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  margin: 0;
-  padding: 0;
-}
-
-/* Main White Content Area */
-.landing-main-content {
-  flex: 1;
-  padding: 30px 20px;
-  max-width: 1200px;
+.landing-header-content {
+  max-width: 1400px;
   margin: 0 auto;
-  width: 100%;
-  position: relative;
+  padding: 0 30px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
-.landing-language-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+.landing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.landing-language-toggle button {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: 8px 16px;
-  border-radius: 4px;
+.landing-language-toggle-btn {
+  background: white;
+  border: 2px solid var(--sage, #7FA588);
+  color: var(--sage, #7FA588);
+  padding: 10px 20px;
+  border-radius: 25px;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: 'Nunito', sans-serif;
+  box-shadow: 0 2px 8px rgba(127, 165, 136, 0.15);
 }
 
-.landing-language-toggle button:hover {
-  background: #e0e0e0;
+.landing-language-toggle-btn:hover {
+  background: var(--sage, #7FA588);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(127, 165, 136, 0.3);
 }
 
-/* Logo Section */
-.landing-logo-section {
+/* Header Action Buttons */
+.btn-header {
+  padding: 10px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: 'Nunito', sans-serif;
+  border: 2px solid;
+  box-shadow: 0 2px 8px rgba(127, 165, 136, 0.15);
+  white-space: nowrap;
+}
+
+.btn-header-primary {
+  background: var(--sage, #7FA588);
+  color: white;
+  border-color: var(--sage, #7FA588);
+}
+
+.btn-header-primary:hover {
+  background: #6a8a72;
+  border-color: #6a8a72;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(127, 165, 136, 0.3);
+}
+
+.btn-header-secondary {
+  background: white;
+  color: var(--sage, #7FA588);
+  border-color: var(--sage, #7FA588);
+}
+
+.btn-header-secondary:hover {
+  background: var(--sage, #7FA588);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(127, 165, 136, 0.3);
+}
+
+/* Responsive header */
+@media (max-width: 768px) {
+  .landing-header-actions {
+    gap: 8px;
+  }
+  
+  .btn-header {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .landing-language-toggle-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Hero Section */
+.landing-hero {
+  width: 100%;
+  padding: 40px 20px 60px;
+  background: linear-gradient(135deg, rgba(127, 165, 136, 0.03) 0%, rgba(201, 168, 93, 0.03) 100%);
+}
+
+.landing-hero-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 50px;
+  align-items: center;
+}
+
+.landing-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
   text-align: center;
-  margin: 20px 0;
-  padding: 0;
+}
+
+.landing-logo-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .landing-logo {
-  width: 150px;
-  height: 150px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.15));
   background: transparent;
-  margin: 0 auto;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.12));
+  /* Remove white background - blend mode helps if logo has white bg */
+  mix-blend-mode: multiply;
+  /* Ensure transparent background */
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
-/* Title and Subtitle Section - Centered */
-.landing-title-section {
+.landing-title-group {
+  width: 100%;
   text-align: center;
-  margin: 40px 0 50px 0;
-  padding: 0 20px;
 }
 
 .landing-title {
-  font-size: 2.5rem;
-  color: #1a237e;
-  margin: 0 0 15px 0;
+  font-size: 3.5rem;
+  color: var(--navy, #2C3E50);
+  margin: 0 0 20px 0;
   font-weight: 700;
+  font-family: 'Libre Baskerville', serif;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
 .landing-subtitle {
-  font-size: 1.2rem;
-  color: #555;
-  margin: 0;
+  font-size: 1.4rem;
+  color: var(--text, #3A3A3A);
+  margin: 0 auto;
   font-weight: 400;
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.6;
+  max-width: 600px;
 }
 
-/* Founders Container */
-.founders-container {
+.landing-banner-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  background: white;
+  padding: 10px;
+}
+
+.landing-banner-image {
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+  max-height: 500px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+
+/* Convenors Section */
+.landing-convenors-section {
+  width: 100%;
+  padding: 80px 20px;
+  background: white;
+}
+
+.landing-section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landing-section-title {
+  font-size: 2.5rem;
+  color: var(--navy, #2C3E50);
+  text-align: center;
+  margin: 0 0 60px 0;
+  font-weight: 700;
+  font-family: 'Libre Baskerville', serif;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.landing-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--sage, #7FA588), var(--sage-light, #A8C4AF));
+  border-radius: 2px;
+}
+
+.convenors-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  margin: 40px 0;
-  padding: 0 20px;
+  margin-bottom: 50px;
 }
 
-.founder-card {
+.convenor-center {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.convenor-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 30px;
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  padding: 40px 30px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(250, 246, 241, 0.5) 100%);
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(127, 165, 136, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.founder-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+.convenor-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--sage, #7FA588), var(--sage-light, #A8C4AF));
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
 }
 
-.founder-image-placeholder {
-  width: 120px;
-  height: 120px;
+.convenor-card:hover::before {
+  transform: scaleX(1);
+}
+
+.convenor-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.convenor-image-wrapper {
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+  margin-bottom: 30px;
+  border: 5px solid white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background: var(--cream, #FAF6F1);
+  position: relative;
 }
 
-.founder-icon {
-  font-size: 60px;
-  opacity: 0.9;
+.convenor-image-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--sage, #7FA588), var(--sage-light, #A8C4AF));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-.founder-info {
+.convenor-card:hover .convenor-image-wrapper::after {
+  opacity: 1;
+}
+
+.convenor-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.convenor-info {
   width: 100%;
 }
 
-.founder-title {
-  font-size: 14px;
-  color: #666;
+.convenor-title {
+  font-size: 15px;
+  color: var(--sage, #7FA588);
   margin-bottom: 12px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.founder-name {
-  font-size: 20px;
-  color: #8b4513;
   font-weight: 700;
-  line-height: 1.4;
-  margin-top: 8px;
-}
-
-/* Action Buttons */
-.landing-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  margin-top: 50px;
-  padding: 0 20px;
-}
-
-.btn-landing {
-  padding: 14px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
+  line-height: 1.5;
+  font-family: 'Nunito', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
+.convenor-name {
+  font-size: 24px;
+  color: var(--navy, #2C3E50);
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 12px 0;
+  font-family: 'Libre Baskerville', serif;
+}
+
+.convenor-phone {
+  font-size: 16px;
+  color: var(--text, #3A3A3A);
+  font-weight: 600;
+  line-height: 1.4;
+  font-family: 'Nunito', sans-serif;
+  margin-top: 8px;
+}
+
+/* CTA Section */
+.landing-cta-section {
+  width: 100%;
+  padding: 80px 20px;
+  background: linear-gradient(135deg, rgba(127, 165, 136, 0.05) 0%, rgba(201, 168, 93, 0.05) 100%);
+}
+
+.landing-actions {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-landing {
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: none;
+  letter-spacing: 0.3px;
+  font-family: 'Nunito', sans-serif;
+  min-width: 180px;
+}
+
 .btn-primary-landing {
-  background: #1a237e;
-  color: #fff;
+  background: var(--sage, #7FA588);
+  color: white;
+  box-shadow: 0 6px 20px rgba(127, 165, 136, 0.35);
 }
 
 .btn-primary-landing:hover {
-  background: #283593;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
+  background: var(--sage-dark, #6B8A73);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(127, 165, 136, 0.45);
 }
 
 .btn-secondary-landing {
-  background: #fff;
-  color: #1a237e;
-  border: 2px solid #1a237e;
+  background: white;
+  color: var(--sage, #7FA588);
+  border: 2px solid var(--sage, #7FA588);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .btn-secondary-landing:hover {
-  background: #1a237e;
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(26, 35, 126, 0.3);
-}
-
-/* Bottom Dark Blue Section */
-.landing-bottom-section {
-  background: #1a237e;
-  height: 40px;
-  width: 100%;
+  background: var(--sage, #7FA588);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(127, 165, 136, 0.35);
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .landing-logo-banner-container {
-    flex-direction: column;
-    gap: 30px;
-    margin: 30px 0;
-    padding: 20px;
+@media (max-width: 1024px) {
+  .landing-hero-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
 
-  .landing-logo {
-    width: 150px;
-    height: 150px;
+  .landing-hero-content {
+    align-items: center;
+    text-align: center;
+  }
+
+  .landing-logo-section {
+    justify-content: center;
   }
 
   .landing-banner-image {
-    height: 200px;
+    min-width: 100%;
+  }
+
+  .landing-subtitle {
     max-width: 100%;
   }
 
-  .landing-title-section {
-    margin: 30px 0 40px 0;
+  .landing-banner-section {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-hero {
+    padding: 30px 20px 50px;
+  }
+
+  .landing-title {
+    font-size: 2.5rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1.2rem;
+  }
+
+  .landing-logo {
+    width: 160px;
+    height: 160px;
+  }
+
+  .landing-convenors-section {
+    padding: 60px 20px;
+  }
+
+  .landing-section-title {
+    font-size: 2rem;
+    margin-bottom: 40px;
+  }
+
+  .convenors-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+
+  .convenor-card {
+    padding: 30px 25px;
+  }
+
+  .convenor-image-wrapper {
+    width: 160px;
+    height: 160px;
+    margin-bottom: 25px;
+  }
+
+  .convenor-name {
+    font-size: 22px;
+  }
+
+  .convenor-title {
+    font-size: 14px;
+  }
+
+  .landing-cta-section {
+    padding: 60px 20px;
+  }
+
+  .landing-actions {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .btn-landing {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-header-content {
+    padding: 0 20px;
+  }
+
+  .landing-hero {
+    padding: 20px 15px 40px;
   }
 
   .landing-title {
@@ -235,66 +528,36 @@
   }
 
   .landing-subtitle {
-    font-size: 1rem;
-  }
-
-  .founders-container {
-    grid-template-columns: 1fr;
-    gap: 30px;
-    margin: 40px 0;
-  }
-
-  .founder-card {
-    padding: 20px;
-  }
-
-  .founder-name {
-    font-size: 18px;
-  }
-
-  .founder-title {
-    font-size: 12px;
-  }
-
-  .landing-actions {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .btn-landing {
-    width: 100%;
-  }
-
-  .salutation-text {
-    font-size: 11px;
-  }
-
-  .top-salutation {
-    font-size: 14px;
-  }
-
-  .second-salutation {
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .landing-main-content {
-    padding: 20px 15px;
+    font-size: 1.1rem;
   }
 
   .landing-logo {
-    width: 120px;
-    height: 120px;
+    width: 140px;
+    height: 140px;
   }
 
-  .founder-image-placeholder {
-    width: 100px;
-    height: 100px;
+  .landing-convenors-section {
+    padding: 40px 15px;
   }
 
-  .founder-icon {
-    font-size: 50px;
+  .landing-section-title {
+    font-size: 1.75rem;
+  }
+
+  .convenor-image-wrapper {
+    width: 140px;
+    height: 140px;
+  }
+
+  .convenor-name {
+    font-size: 20px;
+  }
+
+  .convenor-title {
+    font-size: 13px;
+  }
+
+  .convenor-phone {
+    font-size: 15px;
   }
 }
-

@@ -24,7 +24,7 @@ const getBackendURL = () => {
   }
   
   // Development default
-  return 'http://localhost:8001';
+  return 'http://localhost:8000';
 };
 
 const BACKEND_URL = getBackendURL();
@@ -120,13 +120,13 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route
-            path="/landing"
+            path="/"
             element={
               <LandingPage language={language} setLanguage={setLanguage} />
             }
           />
           <Route
-            path="/"
+            path="/login"
             element={
               user ? (
                 user.role === 'admin' ? (

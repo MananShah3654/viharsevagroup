@@ -311,7 +311,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       <div className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <img src="/images/logo_vsg.jpg" alt="VSG Logo" />
+            <img src="/images/logo_vsg.png" alt="VSG Logo" />
             <h1>{t.dashboard}</h1>
           </div>
           <div className="header-right">
