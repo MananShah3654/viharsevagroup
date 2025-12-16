@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -79,12 +79,13 @@ class Vihar(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     route_no: str
-    gujarati_date: str
-    sahebji_name: str = ""  # Optional field, defaults to empty string
+    gujarati_date: str = ""  # Optional field (removed from form)
+    sahebji_name: str = ""  # Sadhu Bhagvant name (optional field, defaults to empty string)
     vihar_date: str
     vihar_time: str
-    sadhu_bhagvant: int
-    wheelchair: bool = False
+    sadhu_bhagvant: int  # Sadhu Bhagvant count
+    sadhviji_bhagvant: int = 0  # Sadhviji Bhagvant count
+    wheelchair: int = 0  # Wheelchair count (0 = not required, >0 = count required)
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
@@ -94,6 +95,10 @@ class Vihar(BaseModel):
     approx_kms: float
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str  # admin id
+    created_on: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_by: Optional[str] = None
+    updated_on: Optional[str] = None
+    device_ip: Optional[str] = None
 
 class ViharParticipation(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -151,12 +156,13 @@ class UserUpdate(BaseModel):
 
 class ViharCreate(BaseModel):
     route_no: str
-    gujarati_date: str
-    sahebji_name: str = ""  # Optional field
+    gujarati_date: str = ""  # Optional field (removed from form)
+    sahebji_name: str = ""  # Sadhu Bhagvant name (optional field)
     vihar_date: str
     vihar_time: str
-    sadhu_bhagvant: int
-    wheelchair: bool = False
+    sadhu_bhagvant: int  # Sadhu Bhagvant count
+    sadhviji_bhagvant: int = 0  # Sadhviji Bhagvant count
+    wheelchair: int = 0  # Wheelchair count (0 = not required, >0 = count required)
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
@@ -173,8 +179,20 @@ class WhatsAppMessage(BaseModel):
     message: str
 
 class RoleUpdate(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None  # Can be ID or phone
+    phone: Optional[str] = None  # Alternative identifier
     role: str
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ["admin", "user"]:
+            raise ValueError('Role must be either "admin" or "user"')
+        return v
+    
+    def get_identifier(self) -> str:
+        """Get the identifier to use for finding the user (prefer phone, fallback to user_id)"""
+        return self.phone or self.user_id or ""
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -280,7 +298,30 @@ async def update_user_profile(update_data: UserUpdate, current_user: dict = Depe
 @api_router.get("/admin/users", dependencies=[Depends(get_admin_user)])
 async def get_all_users():
     """Get all users (Admin only)"""
-    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    # Include both _id and id in query so we can ensure consistency
+    users_cursor = db.users.find({}, {"password_hash": 0})
+    users = await users_cursor.to_list(1000)
+    
+    # Ensure all users have an 'id' field and remove _id from response
+    for user in users:
+        # If user has _id but no id, use _id as the id (convert to string)
+        if "_id" in user:
+            if "id" not in user or not user.get("id"):
+                # Use _id as the id field
+                user["id"] = str(user["_id"])
+            # Also ensure the id field matches _id if both exist (for consistency)
+            elif user.get("id") != str(user["_id"]):
+                # If id exists but doesn't match _id, prefer the id field
+                # But log a warning
+                logger.warning(f"User {user.get('phone')} has mismatched id and _id: id={user.get('id')}, _id={user.get('_id')}")
+            # Remove _id from response (we only want id)
+            del user["_id"]
+        elif "id" not in user:
+            # Generate a new ID if neither exists (shouldn't happen)
+            user["id"] = str(uuid.uuid4())
+            logger.warning(f"User {user.get('phone')} had no id or _id, generated new id: {user['id']}")
+    
+    logger.info(f"Returning {len(users)} users, all with 'id' field")
     return users
 
 @api_router.post("/admin/users", dependencies=[Depends(get_admin_user)])
@@ -353,13 +394,131 @@ async def delete_user_by_admin(user_id: str):
 @api_router.put("/admin/users/role", dependencies=[Depends(get_admin_user)])
 async def update_user_role(role_data: RoleUpdate):
     """Update user role (Admin only)"""
+    # Validate role value
+    if role_data.role not in ["admin", "user"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role must be either 'admin' or 'user'"
+        )
+    
+    # Get identifier (prefer phone, fallback to user_id)
+    identifier = role_data.get_identifier()
+    if not identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either 'user_id' or 'phone' must be provided"
+        )
+    
+    logger.info(f"Attempting to update role for identifier: {identifier} to role: {role_data.role}")
+    
+    # Try to find user - prefer phone number as it's most reliable
+    existing_user = None
+    update_query = None
+    
+    from bson import ObjectId
+    
+    # Method 1: Try by phone number first (most reliable)
+    if role_data.phone:
+        existing_user = await db.users.find_one({"phone": role_data.phone})
+        if existing_user:
+            # Use phone or _id for update query
+            if existing_user.get("_id"):
+                update_query = {"_id": existing_user.get("_id")}
+            elif existing_user.get("id"):
+                update_query = {"id": existing_user.get("id")}
+            else:
+                update_query = {"phone": role_data.phone}
+            logger.info(f"Found user by phone number: {role_data.phone}")
+    
+    # Method 2: Try by 'id' field (our custom field)
+    if not existing_user and role_data.user_id:
+        existing_user = await db.users.find_one({"id": role_data.user_id})
+        if existing_user:
+            if existing_user.get("_id"):
+                update_query = {"_id": existing_user.get("_id")}
+            elif existing_user.get("id"):
+                update_query = {"id": role_data.user_id}
+            else:
+                update_query = {"id": role_data.user_id}
+            logger.info(f"Found user by 'id' field: {role_data.user_id}")
+    
+    # Method 3: Try by '_id' field (MongoDB's primary key)
+    if not existing_user and role_data.user_id:
+        try:
+            if ObjectId.is_valid(role_data.user_id):
+                existing_user = await db.users.find_one({"_id": ObjectId(role_data.user_id)})
+                if existing_user:
+                    update_query = {"_id": ObjectId(role_data.user_id)}
+                    logger.info(f"Found user by '_id' field: {role_data.user_id}")
+        except Exception as e:
+            logger.warning(f"Could not try _id lookup: {str(e)}")
+    
+    # Method 4: Search all users to find matching ID (handles converted _id to id)
+    if not existing_user and role_data.user_id:
+        try:
+            all_users_cursor = db.users.find({})
+            async for user_doc in all_users_cursor:
+                user_id_str = str(user_doc.get("_id", ""))
+                user_custom_id = user_doc.get("id", "")
+                if user_id_str == role_data.user_id or user_custom_id == role_data.user_id:
+                    existing_user = user_doc
+                    if user_doc.get("_id"):
+                        update_query = {"_id": user_doc.get("_id")}
+                    elif user_doc.get("id"):
+                        update_query = {"id": user_doc.get("id")}
+                    logger.info(f"Found user by matching ID string: {role_data.user_id}")
+                    break
+        except Exception as e:
+            logger.warning(f"Could not search all users: {str(e)}")
+    
+    # If still not found, log all users for debugging
+    if not existing_user:
+        logger.error(f"User not found for role update. identifier: {identifier}")
+        # Get all users to see what IDs exist
+        all_users = await db.users.find({}, {"_id": 1, "id": 1, "phone": 1, "name": 1}).limit(10).to_list(10)
+        logger.error(f"Sample users in database (showing _id, id, phone, name):")
+        for u in all_users:
+            logger.error(f"  User: _id={u.get('_id')}, id={u.get('id')}, phone={u.get('phone')}, name={u.get('name')}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found with identifier: {identifier}. Check server logs for available users."
+        )
+    
+    # Get the actual user ID for logging
+    actual_user_id = existing_user.get("id") or str(existing_user.get("_id", ""))
+    actual_phone = existing_user.get("phone", "")
+    
+    # Prevent changing role if it's already the same
+    if existing_user.get("role") == role_data.role:
+        logger.info(f"User {actual_phone} ({actual_user_id}) is already {role_data.role}")
+        return {
+            "status": "success",
+            "message": f"User is already {role_data.role}",
+            "role": role_data.role
+        }
+    
+    # Update role using the correct query
+    logger.info(f"Updating user with query: {update_query}, setting role to: {role_data.role}")
     result = await db.users.update_one(
-        {"id": role_data.user_id},
+        update_query,
         {"$set": {"role": role_data.role}}
     )
+    
     if result.modified_count == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return {"status": "success", "message": "Role updated"}
+        logger.error(f"Failed to update user role. identifier: {identifier}, update_query: {update_query}, matched_count: {result.matched_count}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user role. User found but update failed."
+        )
+    
+    logger.info(f"User role updated successfully: {actual_phone} ({actual_user_id}) -> {role_data.role}")
+    return {
+        "status": "success",
+        "message": "Role updated successfully",
+        "user_id": actual_user_id,
+        "phone": actual_phone,
+        "new_role": role_data.role
+    }
 
 # WhatsApp Message Parser Helper
 def parse_whatsapp_message(message: str) -> dict:
@@ -493,10 +652,28 @@ def parse_whatsapp_message(message: str) -> dict:
 
 # Vihar Routes
 @api_router.post("/vihars", dependencies=[Depends(get_admin_user)])
-async def create_vihar(vihar_data: ViharCreate, admin: dict = Depends(get_admin_user)):
+async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = Depends(get_admin_user)):
     """Create new vihar (Admin only)"""
     try:
-        vihar = Vihar(**vihar_data.model_dump(), created_by=admin["id"])
+        # Get client IP
+        client_ip = request.client.host if request.client else None
+        # Try to get real IP from headers (for proxies)
+        if not client_ip or client_ip == "127.0.0.1":
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                client_ip = forwarded_for.split(",")[0].strip()
+            else:
+                real_ip = request.headers.get("X-Real-IP")
+                if real_ip:
+                    client_ip = real_ip
+        
+        now = datetime.now(timezone.utc).isoformat()
+        vihar = Vihar(
+            **vihar_data.model_dump(), 
+            created_by=admin["id"],
+            created_on=now,
+            device_ip=client_ip
+        )
         vihar_dict = vihar.model_dump()
         await db.vihars.insert_one(vihar_dict)
         logger.info(f"Vihar created successfully: {vihar.id}")
@@ -506,7 +683,7 @@ async def create_vihar(vihar_data: ViharCreate, admin: dict = Depends(get_admin_
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @api_router.put("/vihars/{vihar_id}", dependencies=[Depends(get_admin_user)])
-async def update_vihar(vihar_id: str, vihar_data: ViharCreate, admin: dict = Depends(get_admin_user)):
+async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request, admin: dict = Depends(get_admin_user)):
     """Update vihar (Admin only)"""
     try:
         # Check if vihar exists
@@ -514,11 +691,31 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, admin: dict = Dep
         if not existing_vihar:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
         
-        # Update vihar - preserve created_at and created_by
+        # Get client IP
+        client_ip = request.client.host if request.client else None
+        # Try to get real IP from headers (for proxies)
+        if not client_ip or client_ip == "127.0.0.1":
+            forwarded_for = request.headers.get("X-Forwarded-For")
+            if forwarded_for:
+                client_ip = forwarded_for.split(",")[0].strip()
+            else:
+                real_ip = request.headers.get("X-Real-IP")
+                if real_ip:
+                    client_ip = real_ip
+        
+        # Update vihar - preserve created_at, created_by, created_on
         update_data = vihar_data.model_dump()
-        # Don't update created_at and created_by
+        # Don't update created_at, created_by, created_on
         update_data.pop('created_at', None)
         update_data.pop('created_by', None)
+        update_data.pop('created_on', None)
+        
+        # Add update tracking
+        now = datetime.now(timezone.utc).isoformat()
+        update_data['updated_by'] = admin["id"]
+        update_data['updated_on'] = now
+        if client_ip:
+            update_data['device_ip'] = client_ip  # Update IP on each update
         
         await db.vihars.update_one(
             {"id": vihar_id},
@@ -654,6 +851,116 @@ async def update_participation(vihar_id: str, participation_data: ParticipationU
         await db.participations.insert_one(participation.model_dump())
     
     return {"status": "success", "message": "Participation updated"}
+
+@api_router.get("/vihars/{vihar_id}/participants", dependencies=[Depends(get_admin_user)])
+async def get_vihar_participants(vihar_id: str):
+    """Get all participants for a vihar with user details (Admin only)"""
+    # Check if vihar exists
+    vihar = await db.vihars.find_one({"id": vihar_id})
+    if not vihar:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
+    
+    # Get all participations for this vihar
+    participations = await db.participations.find({"vihar_id": vihar_id}, {"_id": 0}).to_list(1000)
+    
+    # Get user details for each participation
+    participants_with_details = []
+    for participation in participations:
+        user = await db.users.find_one({"id": participation["user_id"]}, {"_id": 0, "password_hash": 0})
+        if user:
+            # If user has _id but no id, convert it
+            if "_id" in user:
+                if "id" not in user:
+                    user["id"] = str(user["_id"])
+                del user["_id"]
+            
+            participants_with_details.append({
+                "participation_id": participation["id"],
+                "user_id": participation["user_id"],
+                "status": participation["status"],
+                "created_at": participation.get("created_at"),
+                "user": user
+            })
+    
+    return {
+        "vihar_id": vihar_id,
+        "total_participants": len(participants_with_details),
+        "opted_in": len([p for p in participants_with_details if p["status"] == "in"]),
+        "opted_out": len([p for p in participants_with_details if p["status"] == "out"]),
+        "participants": participants_with_details
+    }
+
+class AssignUsersRequest(BaseModel):
+    user_ids: List[str]  # List of user IDs to assign
+    status: str = "in"  # Default status when assigned
+
+@api_router.post("/vihars/{vihar_id}/assign-users", dependencies=[Depends(get_admin_user)])
+async def assign_users_to_vihar(vihar_id: str, assign_data: AssignUsersRequest):
+    """Assign users to a vihar (Admin only)"""
+    # Check if vihar exists
+    vihar = await db.vihars.find_one({"id": vihar_id})
+    if not vihar:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
+    
+    if assign_data.status not in ["in", "out"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Status must be either 'in' or 'out'"
+        )
+    
+    assigned_count = 0
+    errors = []
+    
+    for user_id in assign_data.user_ids:
+        try:
+            # Try to find user by id, _id, or phone
+            user = await db.users.find_one({"id": user_id})
+            if not user:
+                from bson import ObjectId
+                if ObjectId.is_valid(user_id):
+                    user = await db.users.find_one({"_id": ObjectId(user_id)})
+                if not user:
+                    user = await db.users.find_one({"phone": user_id})
+            
+            if not user:
+                errors.append(f"User {user_id} not found")
+                continue
+            
+            # Get actual user ID
+            actual_user_id = user.get("id") or str(user.get("_id", ""))
+            
+            # Check if participation already exists
+            existing = await db.participations.find_one({
+                "vihar_id": vihar_id,
+                "user_id": actual_user_id
+            })
+            
+            if existing:
+                # Update existing participation
+                await db.participations.update_one(
+                    {"id": existing["id"]},
+                    {"$set": {"status": assign_data.status}}
+                )
+            else:
+                # Create new participation
+                participation = ViharParticipation(
+                    vihar_id=vihar_id,
+                    user_id=actual_user_id,
+                    status=assign_data.status
+                )
+                await db.participations.insert_one(participation.model_dump())
+            
+            assigned_count += 1
+        except Exception as e:
+            errors.append(f"Error assigning user {user_id}: {str(e)}")
+            logger.error(f"Error assigning user {user_id} to vihar {vihar_id}: {str(e)}")
+    
+    return {
+        "status": "success",
+        "message": f"Assigned {assigned_count} user(s) to vihar",
+        "assigned_count": assigned_count,
+        "errors": errors if errors else None
+    }
 
 @api_router.get("/vihars/user/my-vihars")
 async def get_my_vihars(current_user: dict = Depends(get_current_user)):

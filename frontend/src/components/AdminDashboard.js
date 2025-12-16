@@ -11,16 +11,14 @@ const translations = {
     createVihar: 'Create New Vihar',
     updateVihar: 'Update Vihar',
     editVihar: 'Edit',
-    createFromWhatsApp: 'Create from WhatsApp Message',
-    pasteWhatsAppMessage: 'Paste WhatsApp Message',
-    parseAndCreate: 'Parse & Create Vihar',
-    whatsAppMessage: 'WhatsApp Message',
+    copyToWhatsApp: 'Copy to WhatsApp',
     routeNo: 'Route Number',
     gujaratiDate: 'Gujarati Calendar Date',
-    sahebjiName: 'Shraman Shramani Bhagvant',
+    sahebjiName: 'Sadhu Bhagvant',
     viharDate: 'Vihar Date',
     viharTime: 'Vihar Time',
-    sadhuBhagvant: 'Thana Count',
+    sadhuBhagvant: 'Sadhu Bhagvant Count',
+    sadhvijiBhagvant: 'Sadhviji Bhagvant Count',
     wheelchair: 'Wheelchair Required',
     luggage: 'Luggage',
     dori: 'Dori',
@@ -62,6 +60,26 @@ const translations = {
     userCreated: 'User created successfully!',
     roleUpdated: 'Role updated successfully!',
     logout: 'Logout',
+    previewParticipants: 'Preview Participants',
+    assignUsers: 'Assign Users',
+    participants: 'Participants',
+    optedIn: 'Opted In',
+    optedOut: 'Opted Out',
+    totalParticipants: 'Total Participants',
+    assignUsersToVihar: 'Assign Users to Vihar',
+    selectUsers: 'Select Users',
+    assign: 'Assign',
+    close: 'Close',
+    noParticipants: 'No participants yet',
+    usersAssigned: 'Users assigned successfully!',
+    gridView: 'Grid View',
+    listView: 'List View',
+    showTop10: 'Show Top 10',
+    showAll: 'Show All',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page',
+    of: 'of',
   },
   gu: {
     dashboard: 'એડમિન ડેશબોર્ડ',
@@ -71,16 +89,14 @@ const translations = {
     createVihar: 'નવો વિહાર બનાવો',
     updateVihar: 'વિહાર અપડેટ કરો',
     editVihar: 'સંપાદન કરો',
-    createFromWhatsApp: 'WhatsApp સંદેશમાંથી બનાવો',
-    pasteWhatsAppMessage: 'WhatsApp સંદેશ પેસ્ટ કરો',
-    parseAndCreate: 'પાર્સ કરો અને વિહાર બનાવો',
-    whatsAppMessage: 'WhatsApp સંદેશ',
+    copyToWhatsApp: 'WhatsApp માં કોપી કરો',
     routeNo: 'રૂટ નંબર',
     gujaratiDate: 'ગુજરાતી કેલેન્ડર તારીખ',
-    sahebjiName: 'શ્રમણ શ્રમણી ભગવંત',
+    sahebjiName: 'સાધુ ભગવંત',
     viharDate: 'વિહાર તારીખ',
     viharTime: 'વિહાર સમય',
-    sadhuBhagvant: 'થાના સંખ્યા',
+    sadhuBhagvant: 'સાધુ ભગવંત સંખ્યા',
+    sadhvijiBhagvant: 'સાધ્વીજી ભગવંત સંખ્યા',
     wheelchair: 'વ્હીલચેર જરૂરી',
     luggage: 'સામાન',
     dori: 'ડોરી',
@@ -121,6 +137,28 @@ const translations = {
     userCreated: 'યુઝર સફળતાપૂર્વક બનાવ્યો!',
     roleUpdated: 'ભૂમિકા અપડેટ થઈ!',
     logout: 'લોગઆઉટ',
+    previewParticipants: 'સહભાગીઓનું પૂર્વાવલોકન',
+    assignUsers: 'યુઝર્સ સોંપો',
+    participants: 'સહભાગીઓ',
+    optedIn: 'ઓપ્ટ ઇન',
+    optedOut: 'ઓપ્ટ આઉટ',
+    totalParticipants: 'કુલ સહભાગીઓ',
+    assignUsersToVihar: 'વિહારમાં યુઝર્સ સોંપો',
+    selectUsers: 'યુઝર્સ પસંદ કરો',
+    assign: 'સોંપો',
+    close: 'બંધ કરો',
+    noParticipants: 'હજુ સુધી કોઈ સહભાગી નથી',
+    usersAssigned: 'યુઝર્સ સફળતાપૂર્વક સોંપ્યા!',
+    gridView: 'ગ્રિડ વ્યૂ',
+    listView: 'લિસ્ટ વ્યૂ',
+    filterByDate: 'તારીખ દ્વારા ફિલ્ટર કરો',
+    showTop10: 'ટોપ 10 બતાવો',
+    showAll: 'બધું બતાવો',
+    noViharsFound: 'પસંદ કરેલી તારીખ માટે કોઈ વિહાર મળ્યો નથી',
+    previous: 'પહેલાં',
+    next: 'આગળ',
+    page: 'પાનું',
+    of: 'માંથી',
   },
 };
 
@@ -128,8 +166,6 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const t = translations[language];
   const [activeTab, setActiveTab] = useState('vihars');
   const [showCreateVihar, setShowCreateVihar] = useState(false);
-  const [showWhatsAppInput, setShowWhatsAppInput] = useState(false);
-  const [whatsAppMessage, setWhatsAppMessage] = useState('');
   const [showAddUser, setShowAddUser] = useState(false);
   const [vihars, setVihars] = useState([]);
   const [users, setUsers] = useState([]);
@@ -139,16 +175,29 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [loading, setLoading] = useState(false);
   const [editingViharId, setEditingViharId] = useState(null);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewViharId, setPreviewViharId] = useState(null);
+  const [viharParticipants, setViharParticipants] = useState([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignViharId, setAssignViharId] = useState(null);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [dateFilter, setDateFilter] = useState(''); // Date filter
+  const [showTop10, setShowTop10] = useState(true); // Show top 10 entries
+  const [userCurrentPage, setUserCurrentPage] = useState(1); // Current page for users
+  const [userItemsPerPage] = useState(10); // Items per page for users
+  const [userNameFilter, setUserNameFilter] = useState(''); // Filter users by name
 
   // Vihar form
   const [viharForm, setViharForm] = useState({
     route_no: '',
-    gujarati_date: '',
     sahebji_name: '',
     vihar_date: '',
     vihar_time: '',
-    sadhu_bhagvant: '',
-    wheelchair: false,
+    sadhu_bhagvant: '0',
+    sadhviji_bhagvant: '0',
+    wheelchair: '0',
     luggage: false,
     dori: false,
     car_required: false,
@@ -195,15 +244,136 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
+  // Filter and sort vihars
+  const getFilteredVihars = () => {
+    let filtered = [...vihars];
+    
+    // Filter by date
+    if (dateFilter) {
+      filtered = filtered.filter(vihar => vihar.vihar_date === dateFilter);
+    }
+    
+    // Sort by date (newest first)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.vihar_date + ' ' + a.vihar_time);
+      const dateB = new Date(b.vihar_date + ' ' + b.vihar_time);
+      return dateB - dateA;
+    });
+    
+    // Limit to top 10 if enabled
+    if (showTop10) {
+      filtered = filtered.slice(0, 10);
+    }
+    
+    return filtered;
+  };
+
+  // Filter, sort, and paginate users
+  const getFilteredUsers = () => {
+    let filtered = [...users];
+    
+    // Filter by name if filter is provided
+    if (userNameFilter.trim()) {
+      const filterLower = userNameFilter.toLowerCase().trim();
+      filtered = filtered.filter(u => {
+        const name = (u.name || '').toLowerCase();
+        const phone = (u.phone || '').toLowerCase();
+        return name.includes(filterLower) || phone.includes(filterLower);
+      });
+    }
+    
+    // Sort by name (alphabetically)
+    filtered.sort((a, b) => {
+      const nameA = (a.name || a.phone || '').toLowerCase();
+      const nameB = (b.name || b.phone || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+    
+    return filtered;
+  };
+
+  // Get paginated users
+  const getPaginatedUsers = () => {
+    const filtered = getFilteredUsers();
+    
+    // Calculate pagination
+    const totalPages = Math.ceil(filtered.length / userItemsPerPage);
+    const startIndex = (userCurrentPage - 1) * userItemsPerPage;
+    const endIndex = startIndex + userItemsPerPage;
+    const paginated = filtered.slice(startIndex, endIndex);
+    
+    return {
+      users: paginated,
+      totalPages,
+      currentPage: userCurrentPage,
+      totalItems: filtered.length,
+      startIndex: startIndex + 1,
+      endIndex: Math.min(endIndex, filtered.length)
+    };
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('/admin/users');
       setUsers(response.data);
+      setUserCurrentPage(1); // Reset to first page when users are fetched
+      setUserNameFilter(''); // Reset name filter when users are fetched
     } catch (error) {
       toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchViharParticipants = async (viharId) => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`/vihars/${viharId}/participants`);
+      setViharParticipants(response.data.participants || []);
+      setPreviewViharId(viharId);
+      setShowPreviewModal(true);
+    } catch (error) {
+      toast.error('Failed to fetch participants');
+      console.error('Error fetching participants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignUsers = async () => {
+    if (selectedUserIds.length === 0) {
+      toast.error('Please select at least one user');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post(`/vihars/${assignViharId}/assign-users`, {
+        user_ids: selectedUserIds,
+        status: 'in'
+      });
+      toast.success(t.usersAssigned);
+      setShowAssignModal(false);
+      setSelectedUserIds([]);
+      setAssignViharId(null);
+      // Refresh vihars to show updated participant counts
+      fetchVihars();
+    } catch (error) {
+      toast.error('Failed to assign users');
+      console.error('Error assigning users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openAssignModal = async (viharId) => {
+    setAssignViharId(viharId);
+    setSelectedUserIds([]);
+    setShowAssignModal(true);
+    // Ensure users are fetched when modal opens
+    if (users.length === 0) {
+      await fetchUsers();
     }
   };
 
@@ -277,36 +447,193 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
-  const handleCreateFromWhatsApp = async () => {
-    if (!whatsAppMessage.trim()) {
-      toast.error('Please paste WhatsApp message');
-      return;
+  // Convert number to Gujarati numerals
+  const toGujaratiNumeral = (num) => {
+    const gujaratiDigits = ['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'];
+    return num.toString().split('').map(digit => gujaratiDigits[parseInt(digit)]).join('');
+  };
+
+  // Simple transliteration helper for common place names (English to Gujarati)
+  // This is a basic mapping - you may need to expand this
+  const transliterateToGujarati = (text) => {
+    if (!text) return '';
+    
+    // Common place name mappings
+    const placeMappings = {
+      'vijaynagar': 'વિજયનગર',
+      'paladi': 'પાલડી',
+      'naranpura': 'નરણપુરા',
+      'ahmedabad': 'અમદાવાદ',
+      'gandhinagar': 'ગાંધીનગર',
+      'vadodara': 'વડોદરા',
+      'surat': 'સુરત',
+      'rajkot': 'રાજકોટ',
+    };
+    
+    // Check if text matches any mapping (case insensitive)
+    const lowerText = text.toLowerCase().trim();
+    if (placeMappings[lowerText]) {
+      return placeMappings[lowerText];
     }
-    setLoading(true);
-    try {
-      const response = await axiosInstance.post('/vihars/from-whatsapp', {
-        message: whatsAppMessage
-      });
-      toast.success(t.viharCreated);
-      setShowWhatsAppInput(false);
-      setWhatsAppMessage('');
-      fetchVihars();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create vihar from WhatsApp message');
-    } finally {
-      setLoading(false);
+    
+    // If no mapping found, return as-is (assuming user already entered in Gujarati)
+    return text;
+  };
+
+  // Get day of week in Gujarati
+  const getGujaratiDay = (dateString) => {
+    const date = new Date(dateString);
+    const days = ['રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર'];
+    return days[date.getDay()];
+  };
+
+  // Format time in Gujarati format (e.g., "સવારે ૫.૩૫વાગે")
+  const formatGujaratiTime = (timeString) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const min = parseInt(minutes);
+    
+    // Determine if morning or evening
+    let period = '';
+    let displayHour = hour;
+    if (hour < 12) {
+      period = 'સવારે';
+    } else if (hour < 18) {
+      period = 'બપોરે';
+      if (hour > 12) displayHour = hour - 12;
+    } else {
+      period = 'સાંજે';
+      if (hour > 12) displayHour = hour - 12;
     }
+    
+    const gujaratiHour = toGujaratiNumeral(displayHour);
+    const gujaratiMin = toGujaratiNumeral(min.toString().padStart(2, '0'));
+    
+    return `${period} ${gujaratiHour}.${gujaratiMin}વાગે`;
+  };
+
+  // Format vihar details to Gujarati WhatsApp message
+  const formatViharToWhatsApp = (form) => {
+    const routeNo = toGujaratiNumeral(form.route_no || '0');
+    const sahebjiName = form.sahebji_name || '';
+    const viharDate = form.vihar_date || '';
+    const viharTime = formatGujaratiTime(form.vihar_time || '');
+    const dayOfWeek = viharDate ? getGujaratiDay(viharDate) : '';
+    
+    // Sadhu and Sadhviji - only include if count > 0
+    const sadhuCount = parseInt(form.sadhu_bhagvant) || 0;
+    const sadhvijiCount = parseInt(form.sadhviji_bhagvant) || 0;
+    const sadhuBhagvant = sadhuCount > 0 ? toGujaratiNumeral(sadhuCount) : null;
+    const sadhvijiBhagvant = sadhvijiCount > 0 ? toGujaratiNumeral(sadhvijiCount) : null;
+    
+    // Wheelchair: only show if count > 0, show actual count
+    const wheelchairCount = parseInt(form.wheelchair) || 0;
+    const wheelchairDisplay = wheelchairCount > 0 ? wheelchairCount.toString() : null;
+    const fromUpashray = transliterateToGujarati(form.from_upashray || '');
+    const toUpashray = transliterateToGujarati(form.to_upashray || '');
+    
+    // Format date as DD/MM/YY
+    let formattedDate = '';
+    if (viharDate) {
+      const date = new Date(viharDate);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear().toString().slice(-2);
+      formattedDate = `${day}/${month}/${year}`;
+    }
+    
+    // Build message lines
+    let messageLines = [
+      'પ્રણામ🙏🏻 વિહાર સેવકો',
+      '',
+      `*રૂટ- ${routeNo}*`,
+      '*વિહાર ની વિગત: -*',
+      `*સાહેબજી નું નામ -* ${sahebjiName}`,
+      `*વિહાર તારીખ-* ${formattedDate},`,
+      `*વાર-* ${dayOfWeek}`,
+      `*વિહાર સમય* ${viharTime}`
+    ];
+    
+    // Add Sadhu Bhagvant only if count > 0
+    if (sadhuBhagvant) {
+      messageLines.push(`*સાધુ ભગવંત -*${sadhuBhagvant}`);
+    }
+    
+    // Add Sadhviji Bhagvant only if count > 0
+    if (sadhvijiBhagvant) {
+      messageLines.push(`*સાધ્વીજી ભગવંત -*${sadhvijiBhagvant}`);
+    }
+    
+    // Wheelchair - only show if count > 0
+    if (wheelchairDisplay) {
+      messageLines.push(`*વિલ ચેર-* ${wheelchairDisplay}`);
+    }
+    
+    // Handle luggage, activa, car, dori with conditional logic
+    // Check luggage first
+    if (form.luggage) {
+      // If luggage is yes and (activa or car is selected)
+      if (form.activa || form.car_required) {
+        let vehicleText = '';
+        if (form.car_required && form.activa) {
+          vehicleText = 'ગાડી / એકટીવા';
+        } else if (form.car_required) {
+          vehicleText = 'ગાડી';
+        } else if (form.activa) {
+          vehicleText = 'એકટીવા';
+        }
+        messageLines.push(`*સામાન છે ${vehicleText} જોઈશે*`);
+      } else {
+        // If luggage is yes but no activa/car
+        messageLines.push('*સામાન -* હા');
+      }
+    } else {
+      // If luggage is no but activa is yes, show luggage=ના and activa=હા
+      if (form.activa) {
+        messageLines.push('*સામાન -* ના');
+        messageLines.push('*એકટીવા -* હા');
+        // Don't show car if only activa is checked
+      } else if (form.car_required) {
+        // If luggage=no, activa=no, but car=yes, show car
+        messageLines.push('*કાર જરૂરી -* હા');
+      }
+    }
+    
+    // Dori - only show if checked
+    if (form.dori) {
+      messageLines.push('*ડોરી -* હા');
+    }
+    
+    messageLines.push(`*ક્યાં ઉપાશ્રય -*${fromUpashray}`);
+    messageLines.push(`*ક્યાં ઉપાશ્રય-* ${toUpashray}`);
+    messageLines.push('');
+    messageLines.push('*અનુકૂળતા હોય તે જણાવશો.*');
+    messageLines.push('');
+    messageLines.push('*એપમાં ઇન કરી લેવું*');
+    
+    return messageLines.join('\n');
+  };
+
+  // Copy vihar details to clipboard in WhatsApp format
+  const handleCopyToWhatsApp = () => {
+    const message = formatViharToWhatsApp(viharForm);
+    navigator.clipboard.writeText(message).then(() => {
+      toast.success('Vihar details copied to clipboard! You can now paste it in WhatsApp.');
+    }).catch(() => {
+      toast.error('Failed to copy to clipboard');
+    });
   };
 
   const resetViharForm = () => {
     setViharForm({
       route_no: '',
-      gujarati_date: '',
       sahebji_name: '',
       vihar_date: '',
       vihar_time: '',
-      sadhu_bhagvant: '',
-      wheelchair: false,
+      sadhu_bhagvant: '0',
+      sadhviji_bhagvant: '0',
+      wheelchair: '0',
       luggage: false,
       dori: false,
       car_required: false,
@@ -323,6 +650,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       const response = await axiosInstance.post('/vihars', {
         ...viharForm,
         sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant) || 0,
+        sadhviji_bhagvant: parseInt(viharForm.sadhviji_bhagvant) || 0,
+        wheelchair: parseInt(viharForm.wheelchair) || 0,
         approx_kms: parseFloat(viharForm.approx_kms) || 0,
       });
       
@@ -356,12 +685,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     setEditingViharId(vihar.id);
     setViharForm({
       route_no: vihar.route_no || '',
-      gujarati_date: vihar.gujarati_date || '',
       sahebji_name: vihar.sahebji_name || '',
       vihar_date: vihar.vihar_date || '',
       vihar_time: vihar.vihar_time || '',
       sadhu_bhagvant: vihar.sadhu_bhagvant || '',
-      wheelchair: vihar.wheelchair || false,
+      sadhviji_bhagvant: vihar.sadhviji_bhagvant || '',
+      wheelchair: vihar.wheelchair !== undefined && vihar.wheelchair !== null ? (typeof vihar.wheelchair === 'boolean' ? (vihar.wheelchair ? '1' : '0') : String(vihar.wheelchair)) : '0',
       luggage: vihar.luggage || false,
       dori: vihar.dori || false,
       car_required: vihar.car_required || false,
@@ -382,6 +711,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       const response = await axiosInstance.put(`/vihars/${editingViharId}`, {
         ...viharForm,
         sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant) || 0,
+        sadhviji_bhagvant: parseInt(viharForm.sadhviji_bhagvant) || 0,
+        wheelchair: parseInt(viharForm.wheelchair) || 0,
         approx_kms: parseFloat(viharForm.approx_kms) || 0,
       });
       
@@ -556,12 +887,88 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleUpdateRole = async (userId, newRole) => {
+    // Debug: Log the user ID being sent
+    console.log('=== ROLE UPDATE DEBUG ===');
+    console.log('Received userId:', userId, 'type:', typeof userId);
+    console.log('New role:', newRole);
+    console.log('All users in state:', users.map(u => ({ 
+      id: u.id, 
+      _id: u._id, 
+      phone: u.phone, 
+      name: u.name,
+      role: u.role 
+    })));
+    
     try {
-      await axiosInstance.put('/admin/users/role', { user_id: userId, role: newRole });
-      toast.success(t.roleUpdated);
-      fetchUsers();
+      // Find the user in the current list
+      const userToUpdate = users.find(u => {
+        // Try multiple matching methods
+        return u.id === userId || 
+               u._id === userId || 
+               String(u.id) === String(userId) || 
+               String(u._id) === String(userId) ||
+               u.phone === userId;
+      });
+      
+      if (!userToUpdate) {
+        console.error('User not found in frontend state. userId:', userId);
+        console.error('Available user IDs:', users.map(u => ({ id: u.id, _id: u._id, phone: u.phone })));
+        toast.error('User not found in current list. Please refresh and try again.');
+        return;
+      }
+      
+      console.log('Found user in frontend:', userToUpdate);
+      
+      // Use phone number as primary identifier (most reliable)
+      // Also send user_id as fallback
+      const userPhone = userToUpdate.phone;
+      const actualUserId = userToUpdate.id || userToUpdate._id || userPhone;
+      
+      console.log('Sending role update with phone:', userPhone, 'user_id:', actualUserId);
+      
+      // Send both phone (primary) and user_id (fallback) for maximum reliability
+      const requestPayload = { 
+        phone: userPhone, // Primary identifier - most reliable
+        user_id: actualUserId, // Fallback identifier
+        role: newRole 
+      };
+      console.log('Request payload:', requestPayload);
+      
+      const response = await axiosInstance.put('/admin/users/role', requestPayload);
+      
+      console.log('Response received:', response);
+      
+      if (response && response.data) {
+        console.log('Role update successful:', response.data);
+        toast.success(t.roleUpdated);
+        // Refresh the user list after a short delay to ensure backend has updated
+        setTimeout(() => {
+          fetchUsers();
+        }, 500);
+      } else {
+        console.error('No response data received');
+        toast.error('Failed to update role: No response from server');
+      }
     } catch (error) {
-      toast.error('Failed to update role');
+      console.error('=== ROLE UPDATE ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Requested userId:', userId);
+      console.error('Current users:', users.map(u => ({ 
+        id: u.id, 
+        _id: u._id, 
+        phone: u.phone, 
+        name: u.name 
+      })));
+      
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to update role';
+      toast.error(errorMessage);
     }
   };
 
@@ -620,47 +1027,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               <h3>{t.allVihars}</h3>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button className="btn btn-primary" onClick={() => {
-                  setShowWhatsAppInput(false);
                   setShowCreateVihar(true);
                 }} data-testid="create-vihar-btn">
                   {t.createVihar}
                 </button>
-                <button className="btn" style={{ background: '#25D366', color: 'white' }} onClick={() => {
-                  setShowCreateVihar(false);
-                  setShowWhatsAppInput(!showWhatsAppInput);
-                }} data-testid="whatsapp-create-btn">
-                  📱 {t.createFromWhatsApp}
-                </button>
               </div>
             </div>
-
-            {showWhatsAppInput && (
-              <div className="card" style={{ background: 'rgba(37, 211, 102, 0.1)', marginBottom: '20px', border: '2px solid #25D366' }}>
-                <h3>📱 {t.createFromWhatsApp}</h3>
-                <div className="form-group">
-                  <label>{t.pasteWhatsAppMessage}</label>
-                  <textarea
-                    value={whatsAppMessage}
-                    onChange={(e) => setWhatsAppMessage(e.target.value)}
-                    placeholder="Paste the WhatsApp message here..."
-                    rows="12"
-                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
-                    data-testid="whatsapp-message-textarea"
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button className="btn btn-primary" onClick={handleCreateFromWhatsApp} disabled={loading} data-testid="parse-whatsapp-btn">
-                    {loading ? 'Processing...' : t.parseAndCreate}
-                  </button>
-                  <button className="btn" onClick={() => {
-                    setShowWhatsAppInput(false);
-                    setWhatsAppMessage('');
-                  }}>
-                    {t.cancel}
-                  </button>
-                </div>
-              </div>
-            )}
 
             {showCreateVihar && (
               <div className="card" style={{ background: 'rgba(168, 198, 159, 0.1)', marginBottom: '20px' }}>
@@ -673,15 +1045,6 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       value={viharForm.route_no}
                       onChange={(e) => setViharForm({ ...viharForm, route_no: e.target.value })}
                       data-testid="route-no-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.gujaratiDate}</label>
-                    <input
-                      type="text"
-                      value={viharForm.gujarati_date}
-                      onChange={(e) => setViharForm({ ...viharForm, gujarati_date: e.target.value })}
-                      data-testid="gujarati-date-input"
                     />
                   </div>
                   <div className="form-group">
@@ -721,6 +1084,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     />
                   </div>
                   <div className="form-group">
+                    <label>{t.sadhvijiBhagvant}</label>
+                    <input
+                      type="number"
+                      value={viharForm.sadhviji_bhagvant}
+                      onChange={(e) => setViharForm({ ...viharForm, sadhviji_bhagvant: e.target.value })}
+                      data-testid="sadhviji-count-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>{t.fromUpashray}</label>
                     <input
                       type="text"
@@ -750,14 +1122,16 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      checked={viharForm.wheelchair}
-                      onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.checked })}
-                      data-testid="wheelchair-checkbox"
-                    />
+                  <div className="form-group" style={{ minWidth: '200px' }}>
                     <label>{t.wheelchair}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={viharForm.wheelchair}
+                      onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.value })}
+                      data-testid="wheelchair-input"
+                      placeholder="0"
+                    />
                   </div>
                   <div className="checkbox-group">
                     <input
@@ -796,9 +1170,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <label>{t.activa}</label>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={editingViharId ? handleUpdateVihar : handleCreateVihar} disabled={loading} data-testid="submit-vihar-btn">
                     {editingViharId ? t.updateVihar : t.create}
+                  </button>
+                  <button 
+                    className="btn" 
+                    style={{ background: '#25D366', color: 'white' }} 
+                    onClick={handleCopyToWhatsApp}
+                    data-testid="copy-whatsapp-btn"
+                  >
+                    📱 {t.copyToWhatsApp}
                   </button>
                   <button className="btn btn-secondary" onClick={() => {
                     setShowCreateVihar(false);
@@ -811,25 +1193,152 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               </div>
             )}
 
+            {/* Filter and View Controls */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '15px', 
+              marginBottom: '20px', 
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              padding: '15px',
+              background: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0'
+            }}>
+              {/* Date Filter */}
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: '500', color: '#666' }}>
+                  📅 {t.filterByDate}
+                </label>
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '2px solid #e0e0e0',
+                    fontSize: '14px',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#1a237e'}
+                  onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                />
+                {dateFilter && (
+                  <button
+                    onClick={() => setDateFilter('')}
+                    style={{
+                      marginTop: '5px',
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      background: '#f44336',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Top 10 Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#666'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={showTop10}
+                    onChange={(e) => setShowTop10(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#1a237e' }}
+                  />
+                  {t.showTop10}
+                </label>
+              </div>
+
+              {/* View Mode Toggle */}
+              <div style={{ display: 'flex', gap: '5px', background: 'white', padding: '4px', borderRadius: '8px', border: '2px solid #e0e0e0' }}>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'grid' ? '#1a237e' : 'transparent',
+                    color: viewMode === 'grid' ? 'white' : '#666',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ⊞ {t.gridView}
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'list' ? '#1a237e' : 'transparent',
+                    color: viewMode === 'list' ? 'white' : '#666',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ☰ {t.listView}
+                </button>
+              </div>
+            </div>
+
             {loading ? (
               <div className="loading-container"><div className="spinner"></div></div>
-            ) : vihars.length === 0 ? (
-              <div className="empty-state">
-                <h3>No vihars yet</h3>
-                <p>Create your first vihar to get started</p>
-              </div>
-            ) : (
-              <div className="vihar-grid">
-                {vihars.map((vihar) => (
+            ) : (() => {
+              const filteredVihars = getFilteredVihars();
+              
+              if (vihars.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <h3>No vihars yet</h3>
+                    <p>Create your first vihar to get started</p>
+                  </div>
+                );
+              }
+              
+              if (filteredVihars.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <h3>{t.noViharsFound}</h3>
+                    <p>Try changing the date filter or showing all entries</p>
+                  </div>
+                );
+              }
+
+              // Grid View
+              if (viewMode === 'grid') {
+                return (
+                  <div className="vihar-grid">
+                    {filteredVihars.map((vihar) => (
                   <div key={vihar.id} className="vihar-card" data-testid={`vihar-card-${vihar.id}`}>
                     <h4>{vihar.sahebji_name}</h4>
                     <p><strong>{t.routeNo}:</strong> {vihar.route_no}</p>
-                    <p><strong>{t.gujaratiDate}:</strong> {vihar.gujarati_date}</p>
                     <p><strong>{t.viharDate}:</strong> {vihar.vihar_date} at {vihar.vihar_time}</p>
                     <p><strong>{t.fromUpashray}:</strong> {vihar.from_upashray}</p>
                     <p><strong>{t.toUpashray}:</strong> {vihar.to_upashray}</p>
                     <p><strong>{t.approxKms}:</strong> {vihar.approx_kms} km</p>
                     <p><strong>{t.sadhuBhagvant}:</strong> {vihar.sadhu_bhagvant}</p>
+                    <p><strong>{t.sadhvijiBhagvant}:</strong> {vihar.sadhviji_bhagvant || 0}</p>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                       {vihar.wheelchair && <span className="status-badge status-in">♿ {t.wheelchair}</span>}
                       {vihar.luggage && <span className="status-badge status-out">🧳 {t.luggage}</span>}
@@ -837,28 +1346,158 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       {vihar.car_required && <span className="status-badge status-out">🚗 {t.carRequired}</span>}
                       {vihar.activa && <span className="status-badge status-out">🏍️ {t.activa}</span>}
                     </div>
-                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         className="btn-action btn-edit"
                         onClick={() => handleEditVihar(vihar)}
                         data-testid={`edit-vihar-btn-${vihar.id}`}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, minWidth: '80px' }}
                       >
                         {t.editVihar}
+                      </button>
+                      <button
+                        className="btn-action"
+                        onClick={() => fetchViharParticipants(vihar.id)}
+                        data-testid={`preview-vihar-btn-${vihar.id}`}
+                        style={{ flex: 1, minWidth: '80px', background: '#7FA588', color: 'white' }}
+                      >
+                        {t.previewParticipants}
+                      </button>
+                      <button
+                        className="btn-action btn-edit"
+                        onClick={() => openAssignModal(vihar.id)}
+                        data-testid={`assign-vihar-btn-${vihar.id}`}
+                        style={{ flex: 1, minWidth: '80px' }}
+                      >
+                        {t.assignUsers}
                       </button>
                       <button
                         className="btn-action btn-delete"
                         onClick={() => handleDeleteVihar(vihar.id)}
                         data-testid={`delete-vihar-btn-${vihar.id}`}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, minWidth: '80px' }}
                       >
                         {t.deleteVihar}
                       </button>
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
+                  </div>
+                );
+              }
+
+              // List View
+              return (
+                <div style={{ 
+                  background: 'white', 
+                  borderRadius: '8px', 
+                  border: '1px solid #e0e0e0',
+                  overflow: 'hidden'
+                }}>
+                  <table className="data-table" style={{ width: '100%', margin: 0 }}>
+                    <thead>
+                      <tr style={{ background: '#f8f9fa' }}>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>Date & Time</th>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>Route</th>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>Shraman Shramani Bhagvant</th>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>From → To</th>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>KMs</th>
+                        <th style={{ padding: '12px', textAlign: 'left' }}>Requirements</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredVihars.map((vihar) => (
+                        <tr key={vihar.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ fontWeight: '600', color: '#1a237e' }}>
+                              {vihar.vihar_date}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                              {vihar.vihar_time}
+                            </div>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ fontWeight: '600' }}>{vihar.route_no}</div>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div>{vihar.sahebji_name || 'N/A'}</div>
+                            <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                              Sadhu: {vihar.sadhu_bhagvant}, Sadhviji: {vihar.sadhviji_bhagvant || 0}
+                            </div>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ fontSize: '14px' }}>
+                              <div>📍 {vihar.from_upashray}</div>
+                              <div style={{ margin: '4px 0', color: '#666' }}>↓</div>
+                              <div>📍 {vihar.to_upashray}</div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '15px', textAlign: 'center' }}>
+                            <div style={{ fontWeight: '600', color: '#1a237e' }}>
+                              {vihar.approx_kms} km
+                            </div>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {vihar.wheelchair && <span className="status-badge status-in" style={{ fontSize: '11px', padding: '3px 8px' }}>♿</span>}
+                              {vihar.luggage && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🧳</span>}
+                              {vihar.dori && <span className="status-badge status-in" style={{ fontSize: '11px', padding: '3px 8px' }}>📦</span>}
+                              {vihar.car_required && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🚗</span>}
+                              {vihar.activa && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🏍️</span>}
+                              {!vihar.wheelchair && !vihar.luggage && !vihar.dori && !vihar.car_required && !vihar.activa && (
+                                <span style={{ fontSize: '12px', color: '#999' }}>None</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '15px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                              <button
+                                className="btn-action btn-edit"
+                                onClick={() => handleEditVihar(vihar)}
+                                style={{ fontSize: '12px', padding: '6px 10px' }}
+                                title="Edit"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className="btn-action"
+                                onClick={() => fetchViharParticipants(vihar.id)}
+                                style={{ fontSize: '12px', padding: '6px 10px', background: '#7FA588', color: 'white' }}
+                                title="Preview"
+                              >
+                                👁️
+                              </button>
+                              <button
+                                className="btn-action btn-edit"
+                                onClick={() => openAssignModal(vihar.id)}
+                                style={{ fontSize: '12px', padding: '6px 10px' }}
+                                title="Assign"
+                              >
+                                ➕
+                              </button>
+                              <button
+                                className="btn-action btn-delete"
+                                onClick={() => handleDeleteVihar(vihar.id)}
+                                style={{ fontSize: '12px', padding: '6px 10px' }}
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {showTop10 && filteredVihars.length === 10 && (
+                    <div style={{ padding: '15px', textAlign: 'center', background: '#f8f9fa', borderTop: '1px solid #e0e0e0', color: '#666', fontSize: '14px' }}>
+                      Showing top 10 entries. Uncheck "Show Top 10" to see all entries.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1033,116 +1672,296 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               </div>
             )}
 
+            {/* Name Filter */}
+            {!loading && users.length > 0 && (
+              <div style={{ 
+                marginBottom: '20px',
+                padding: '15px',
+                background: '#f8f9fa',
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0'
+              }}>
+                <div className="form-group" style={{ marginBottom: 0, maxWidth: '400px' }}>
+                  <label style={{ marginBottom: '8px', display: 'block', fontWeight: '500', color: '#666' }}>
+                    🔍 Filter by Name or Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={userNameFilter}
+                    onChange={(e) => {
+                      setUserNameFilter(e.target.value);
+                      setUserCurrentPage(1); // Reset to first page when filter changes
+                    }}
+                    placeholder="Search by name or phone number..."
+                    style={{
+                      width: '100%',
+                      padding: '10px 15px',
+                      borderRadius: '6px',
+                      border: '2px solid #e0e0e0',
+                      fontSize: '14px',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#7FA588'}
+                    onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                  />
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="loading-container"><div className="spinner"></div></div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>{t.name}</th>
-                    <th>{t.area}</th>
-                    <th>{t.age}</th>
-                    <th>{t.role}</th>
-                    <th>{t.phone}</th>
-                    <th>Car</th>
-                    <th>{t.actions}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id} data-testid={`user-row-${u.id}`}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {u.photo && (
-                            <div style={{ 
-                              position: 'relative', 
-                              width: '40px', 
-                              height: '40px', 
-                              borderRadius: '50%',
-                              overflow: 'hidden',
-                              flexShrink: 0
-                            }}>
-                              <img 
-                                src="/images/logo_vsg.jpg" 
-                                alt="VSG Background" 
-                                style={{
-                                  position: 'absolute',
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                  opacity: 0.3,
-                                  zIndex: 1
-                                }}
-                              />
-                              <img 
-                                src={u.photo} 
-                                alt="User" 
-                                style={{
-                                  position: 'absolute',
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                  zIndex: 2,
-                                  borderRadius: '50%'
-                                }}
-                              />
+            ) : (() => {
+              const paginationData = getPaginatedUsers();
+              
+              if (users.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <h3>No users available</h3>
+                    <p>Add users to get started</p>
+                  </div>
+                );
+              }
+
+              if (paginationData.users.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <h3>No users found</h3>
+                    <p>{userNameFilter ? 'Try changing the search filter' : 'Add users to get started'}</p>
+                  </div>
+                );
+              }
+
+              // List View
+              return (
+                <>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>{t.name}</th>
+                        <th>{t.area}</th>
+                        <th>{t.age}</th>
+                        <th>{t.role}</th>
+                        <th>Is Admin</th>
+                        <th>{t.phone}</th>
+                        <th>Car</th>
+                        <th>{t.actions}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginationData.users.map((u) => (
+                        <tr key={u.id} data-testid={`user-row-${u.id}`}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              {u.photo && (
+                                <div style={{ 
+                                  position: 'relative', 
+                                  width: '40px', 
+                                  height: '40px', 
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  flexShrink: 0
+                                }}>
+                                  <img 
+                                    src="/images/logo_vsg.jpg" 
+                                    alt="VSG Background" 
+                                    style={{
+                                      position: 'absolute',
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      opacity: 0.3,
+                                      zIndex: 1
+                                    }}
+                                  />
+                                  <img 
+                                    src={u.photo} 
+                                    alt="User" 
+                                    style={{
+                                      position: 'absolute',
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      zIndex: 2,
+                                      borderRadius: '50%'
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <span>{u.name || 'N/A'}</span>
                             </div>
-                          )}
-                          <span>{u.name || 'N/A'}</span>
-                        </div>
-                      </td>
-                      <td>{u.area || 'N/A'}</td>
-                      <td>{u.age || 'N/A'}</td>
-                      <td><strong>{u.role}</strong></td>
-                      <td>{u.phone}</td>
-                      <td>{u.car ? 'Yes' : 'No'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {u.role === 'user' && (
-                            <>
+                          </td>
+                          <td>{u.area || 'N/A'}</td>
+                          <td>{u.age || 'N/A'}</td>
+                          <td><strong>{u.role}</strong></td>
+                          <td>
+                            <span style={{
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              backgroundColor: u.role === 'admin' ? '#1a237e' : '#6c757d',
+                              color: 'white'
+                            }}>
+                              {u.role === 'admin' ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td>{u.phone}</td>
+                          <td>{u.car ? 'Yes' : 'No'}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                               <button
                                 className="btn-action btn-edit"
                                 onClick={() => handleEditUser(u)}
                                 data-testid={`edit-user-btn-${u.id}`}
                                 style={{ fontSize: '0.85rem', padding: '6px 12px' }}
                               >
-                                 {t.edit}
+                                {t.edit}
                               </button>
+                              
+                              {u.role === 'user' && (
+                                <>
+                                  <button
+                                    className="btn-action btn-delete"
+                                    onClick={() => handleDeleteUser(u.id)}
+                                    data-testid={`delete-user-btn-${u.id}`}
+                                    style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                                  >
+                                    {t.delete}
+                                  </button>
+                                  <button
+                                    className="btn-action btn-edit"
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to make ${u.name || u.phone} an admin? They will have full admin access.`)) {
+                                        handleUpdateRole(u.id, 'admin');
+                                      }
+                                    }}
+                                    data-testid={`make-admin-btn-${u.id}`}
+                                    style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#1a237e', color: 'white' }}
+                                  >
+                                    {t.makeAdmin}
+                                  </button>
+                                </>
+                              )}
+                              
+                              {u.role === 'admin' && u.phone !== user.phone && (
+                                <button
+                                  className="btn-action btn-delete"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to remove admin access from ${u.name || u.phone}?`)) {
+                                      handleUpdateRole(u.id, 'user');
+                                    }
+                                  }}
+                                  data-testid={`make-user-btn-${u.id}`}
+                                  style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                                >
+                                  {t.makeUser}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination */}
+                  {paginationData.totalPages > 1 && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '25px',
+                      padding: '15px',
+                      background: '#f8f9fa',
+                      borderRadius: '8px',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}>
+                      <div style={{ fontSize: '14px', color: '#666' }}>
+                        Showing {paginationData.startIndex} to {paginationData.endIndex} of {paginationData.totalItems} users
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => setUserCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={userCurrentPage === 1}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            border: '2px solid #e0e0e0',
+                            background: userCurrentPage === 1 ? '#f5f5f5' : 'white',
+                            color: userCurrentPage === 1 ? '#999' : '#666',
+                            cursor: userCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ← {t.previous}
+                        </button>
+                        
+                        {/* Page Numbers */}
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1).map((pageNum) => {
+                            const showPage = 
+                              pageNum === 1 || 
+                              pageNum === paginationData.totalPages || 
+                              (pageNum >= userCurrentPage - 1 && pageNum <= userCurrentPage + 1);
+                            
+                            if (!showPage && pageNum === 2 && userCurrentPage > 3) {
+                              return <span key={pageNum} style={{ padding: '8px', color: '#666' }}>...</span>;
+                            }
+                            if (!showPage && pageNum === paginationData.totalPages - 1 && userCurrentPage < paginationData.totalPages - 2) {
+                              return null;
+                            }
+                            if (!showPage) return null;
+                            
+                            return (
                               <button
-                                className="btn-action btn-delete"
-                                onClick={() => handleDeleteUser(u.id)}
-                                data-testid={`delete-user-btn-${u.id}`}
-                                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                                key={pageNum}
+                                onClick={() => setUserCurrentPage(pageNum)}
+                                style={{
+                                  padding: '8px 12px',
+                                  borderRadius: '6px',
+                                  border: '2px solid #e0e0e0',
+                                  background: userCurrentPage === pageNum ? '#7FA588' : 'white',
+                                  color: userCurrentPage === pageNum ? 'white' : '#666',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  fontWeight: userCurrentPage === pageNum ? '600' : '500',
+                                  transition: 'all 0.2s',
+                                  minWidth: '40px'
+                                }}
                               >
-                                 {t.delete}
+                                {pageNum}
                               </button>
-                              <button
-                                className="btn-action btn-edit"
-                                onClick={() => handleUpdateRole(u.id, 'admin')}
-                                data-testid={`make-admin-btn-${u.id}`}
-                                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
-                              >
-                                {t.makeAdmin}
-                              </button>
-                            </>
-                          )}
-                          {u.role === 'admin' && u.phone !== user.phone && (
-                            <button
-                              className="btn-action btn-delete"
-                              onClick={() => handleUpdateRole(u.id, 'user')}
-                              data-testid={`make-user-btn-${u.id}`}
-                              style={{ fontSize: '0.85rem', padding: '6px 12px' }}
-                            >
-                              {t.makeUser}
-                            </button>
-                          )}
+                            );
+                          })}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        
+                        <button
+                          onClick={() => setUserCurrentPage(prev => Math.min(paginationData.totalPages, prev + 1))}
+                          disabled={userCurrentPage === paginationData.totalPages}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            border: '2px solid #e0e0e0',
+                            background: userCurrentPage === paginationData.totalPages ? '#f5f5f5' : 'white',
+                            color: userCurrentPage === paginationData.totalPages ? '#999' : '#666',
+                            cursor: userCurrentPage === paginationData.totalPages ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {t.next} →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -1241,6 +2060,591 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
           </div>
         )}
       </div>
+
+      {/* Preview Participants Modal - Centered Popup */}
+      {showPreviewModal && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowPreviewModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '30px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+            }}
+          >
+            {/* Header */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '25px', 
+              paddingBottom: '15px', 
+              borderBottom: '2px solid #f0f0f0' 
+            }}>
+              <h2 style={{ margin: 0, color: '#2C3E50', fontSize: '24px', fontWeight: '600' }}>
+                👥 {t.previewParticipants}
+              </h2>
+              <button 
+                onClick={() => setShowPreviewModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s',
+                  lineHeight: 1
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = '#f5f5f5';
+                  e.target.style.color = '#333';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'transparent';
+                  e.target.style.color = '#666';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Content */}
+            {loading ? (
+              <div style={{ padding: '40px', textAlign: 'center' }}>
+                <div className="spinner" style={{ margin: '0 auto' }}></div>
+                <p style={{ marginTop: '15px', color: '#666' }}>Loading participants...</p>
+              </div>
+            ) : (
+              <>
+                {/* Summary Cards */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '15px', 
+                  marginBottom: '25px', 
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{
+                    flex: 1,
+                    minWidth: '150px',
+                    padding: '15px',
+                    background: '#7FA588',
+                    borderRadius: '8px',
+                    color: 'white',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 6px rgba(127, 165, 136, 0.3)',
+                    borderLeft: '4px solid #6B8A73'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: '700', marginBottom: '5px' }}>
+                      {viharParticipants.length}
+                    </div>
+                    <div style={{ fontSize: '14px', opacity: 0.95 }}>
+                      {t.totalParticipants}
+                    </div>
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    minWidth: '150px',
+                    padding: '15px',
+                    background: '#7FA588',
+                    borderRadius: '8px',
+                    color: 'white',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 6px rgba(127, 165, 136, 0.3)',
+                    borderLeft: '4px solid #6B8A73'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: '700', marginBottom: '5px' }}>
+                      {viharParticipants.filter(p => p.status === 'in').length}
+                    </div>
+                    <div style={{ fontSize: '14px', opacity: 0.95 }}>
+                      {t.optedIn}
+                    </div>
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    minWidth: '150px',
+                    padding: '15px',
+                    background: '#C9A85D',
+                    borderRadius: '8px',
+                    color: 'white',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 6px rgba(201, 168, 93, 0.3)',
+                    borderLeft: '4px solid #B8954A'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: '700', marginBottom: '5px' }}>
+                      {viharParticipants.filter(p => p.status === 'out').length}
+                    </div>
+                    <div style={{ fontSize: '14px', opacity: 0.95 }}>
+                      {t.optedOut}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Participants Table */}
+                {viharParticipants.length === 0 ? (
+                  <div style={{ 
+                    padding: '60px 20px', 
+                    textAlign: 'center',
+                    background: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '2px dashed #e0e0e0'
+                  }}>
+                    <div style={{ fontSize: '48px', marginBottom: '15px' }}>👥</div>
+                    <p style={{ fontSize: '16px', color: '#666', margin: 0 }}>{t.noParticipants}</p>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    flex: 1,
+                    overflowY: 'auto',
+                    border: '2px solid #e0e0e0',
+                    borderRadius: '8px',
+                    background: '#fafafa'
+                  }}>
+                    <table className="data-table" style={{ width: '100%', margin: 0, background: 'white' }}>
+                      <thead>
+                        <tr style={{ background: '#f8f9fa', position: 'sticky', top: 0, zIndex: 10 }}>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Name</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Phone</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Area</th>
+                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#2C3E50' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viharParticipants.map((participant) => (
+                          <tr 
+                            key={participant.participation_id}
+                            style={{ 
+                              borderBottom: '1px solid #f0f0f0',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                            onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                          >
+                            <td style={{ padding: '12px', fontWeight: '500' }}>
+                              {participant.user?.name || 'N/A'}
+                            </td>
+                            <td style={{ padding: '12px', color: '#666' }}>
+                              {participant.user?.phone || 'N/A'}
+                            </td>
+                            <td style={{ padding: '12px', color: '#666' }}>
+                              {participant.user?.area || 'N/A'}
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span 
+                                className={`status-badge ${participant.status === 'in' ? 'status-in' : 'status-out'}`}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '20px',
+                                  fontSize: '13px',
+                                  fontWeight: '600',
+                                  display: 'inline-block'
+                                }}
+                              >
+                                {participant.status === 'in' ? '✓ In' : '✗ Out'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Assign Users Modal - Professional Design */}
+      {showAssignModal && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => {
+            setShowAssignModal(false);
+            setUserSearchTerm('');
+          }} 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '30px',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+            }}
+          >
+            {/* Header */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '25px', 
+              paddingBottom: '15px', 
+              borderBottom: '2px solid #f0f0f0' 
+            }}>
+              <h2 style={{ margin: 0, color: '#2C3E50', fontSize: '24px', fontWeight: '600' }}>
+                {t.assignUsersToVihar}
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setUserSearchTerm('');
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '5px 10px',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s',
+                  lineHeight: 1
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = '#f5f5f5';
+                  e.target.style.color = '#333';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'transparent';
+                  e.target.style.color = '#666';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Search users by name, phone, or area..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: '2px solid #e0e0e0',
+                  fontSize: '14px',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#7FA588'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            {/* Users List */}
+            <div style={{ 
+              flex: 1,
+              overflowY: 'auto',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              background: '#fafafa',
+              marginBottom: '20px',
+              minHeight: '300px'
+            }}>
+              {loading && users.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <div className="spinner" style={{ margin: '0 auto' }}></div>
+                  <p style={{ marginTop: '15px', color: '#666' }}>Loading users...</p>
+                </div>
+              ) : (() => {
+                const filteredUsers = users.filter(u => {
+                  if (!userSearchTerm) return true;
+                  const search = userSearchTerm.toLowerCase();
+                  return (
+                    (u.name || '').toLowerCase().includes(search) ||
+                    (u.phone || '').includes(search) ||
+                    (u.area || '').toLowerCase().includes(search)
+                  );
+                });
+
+                if (filteredUsers.length === 0) {
+                  return (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+                      <p style={{ fontSize: '16px', margin: 0 }}>
+                        {userSearchTerm ? 'No users found matching your search' : 'No users available'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ padding: '10px' }}>
+                    {filteredUsers.map((u) => {
+                      const userId = u.id || u._id || u.phone;
+                      const isSelected = selectedUserIds.includes(userId);
+                      return (
+                        <div 
+                          key={userId} 
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+                            } else {
+                              setSelectedUserIds([...selectedUserIds, userId]);
+                            }
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '15px',
+                            marginBottom: '8px',
+                            borderRadius: '8px',
+                            background: isSelected ? '#E8F5E9' : 'white',
+                            border: `2px solid ${isSelected ? '#7FA588' : '#e0e0e0'}`,
+                            borderLeft: `4px solid ${isSelected ? '#7FA588' : 'transparent'}`,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxShadow: isSelected ? '0 2px 8px rgba(127, 165, 136, 0.2)' : 'none'
+                          }}
+                          onMouseOver={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.borderColor = '#7FA588';
+                              e.currentTarget.style.background = '#f5f5f5';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.borderColor = '#e0e0e0';
+                              e.currentTarget.style.background = 'white';
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              marginRight: '15px',
+                              width: '20px',
+                              height: '20px',
+                              cursor: 'pointer',
+                              accentColor: '#7FA588'
+                            }}
+                          />
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            {u.photo && (
+                              <div style={{
+                                width: '45px',
+                                height: '45px',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                border: '2px solid #e0e0e0',
+                                flexShrink: 0,
+                                background: '#f0f0f0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <img 
+                                  src={u.photo} 
+                                  alt={u.name || 'User'} 
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    const parent = e.target.parentElement;
+                                    if (parent && !parent.querySelector('.avatar-fallback')) {
+                                      const fallback = document.createElement('div');
+                                      fallback.className = 'avatar-fallback';
+                                      fallback.style.cssText = 'font-size: 20px; color: #999;';
+                                      fallback.textContent = '👤';
+                                      parent.appendChild(fallback);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            )}
+                            {!u.photo && (
+                              <div style={{
+                                width: '45px',
+                                height: '45px',
+                                borderRadius: '50%',
+                                background: '#7FA588',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                                flexShrink: 0
+                              }}>
+                                {(u.name || u.phone || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ 
+                                fontWeight: '600', 
+                                fontSize: '15px', 
+                                color: '#2C3E50',
+                                marginBottom: '4px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {u.name || 'No Name'}
+                              </div>
+                              <div style={{ fontSize: '13px', color: '#666', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                                <span>📱 {u.phone}</span>
+                                {u.area && <span>📍 {u.area}</span>}
+                                {u.role === 'admin' && <span style={{ color: '#7FA588', fontWeight: '600' }}>👑 Admin</span>}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div style={{
+                                background: '#7FA588',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '24px',
+                                height: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                flexShrink: 0
+                              }}>
+                                ✓
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: '20px',
+              borderTop: '2px solid #f0f0f0',
+              flexWrap: 'wrap',
+              gap: '15px'
+            }}>
+              <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
+                <span style={{ color: '#7FA588', fontWeight: '600', fontSize: '16px' }}>{selectedUserIds.length}</span> user(s) selected
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setUserSearchTerm('');
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: '2px solid #e0e0e0',
+                    background: 'white',
+                    color: '#666',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.borderColor = '#999';
+                    e.target.style.background = '#f5f5f5';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.borderColor = '#e0e0e0';
+                    e.target.style.background = 'white';
+                  }}
+                >
+                  {t.cancel}
+                </button>
+                <button 
+                  onClick={handleAssignUsers}
+                  disabled={loading || selectedUserIds.length === 0}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: selectedUserIds.length === 0 ? '#ccc' : '#7FA588',
+                    color: 'white',
+                    cursor: selectedUserIds.length === 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                    opacity: selectedUserIds.length === 0 ? 0.6 : 1,
+                    boxShadow: selectedUserIds.length > 0 ? '0 4px 15px rgba(127, 165, 136, 0.3)' : 'none'
+                  }}
+                  onMouseOver={(e) => {
+                    if (selectedUserIds.length > 0 && !loading) {
+                      e.target.style.background = '#6B8A73';
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 6px 20px rgba(127, 165, 136, 0.4)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (selectedUserIds.length > 0) {
+                      e.target.style.background = '#7FA588';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 15px rgba(127, 165, 136, 0.3)';
+                    }
+                  }}
+                >
+                  {loading ? '⏳ Assigning...' : `✓ ${t.assign} (${selectedUserIds.length})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

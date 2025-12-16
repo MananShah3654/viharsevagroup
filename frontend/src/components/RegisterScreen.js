@@ -104,9 +104,8 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
     try {
       const response = await axiosInstance.post('/auth/register', { phone, password, name: name.trim(), area: area.trim() });
       
-      // Check if response is successful (status 200-299) and has data
-      if (response && (response.status === 200 || response.status === 201) && response.data) {
-        // Registration was successful
+      // If we get here, registration was successful
+      if (response && response.data) {
         registrationSucceeded = true;
         toast.success(t.registerSuccess);
         setPhone('');
@@ -114,34 +113,10 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
         setArea('');
         setPassword('');
         setConfirmPassword('');
-        // Redirect to login screen after a short delay
         setTimeout(() => {
           navigate('/');
         }, 1500);
-      } else {
-        // Response exists but format is unexpected - verify by trying to login
-        console.warn('Unexpected response format, verifying registration...');
-        setTimeout(async () => {
-          try {
-            const loginCheck = await axiosInstance.post('/auth/login', { phone, password });
-            if (loginCheck.data && loginCheck.data.user) {
-              // User was created successfully
-              toast.success(t.registerSuccess);
-              setPhone('');
-              setName('');
-              setArea('');
-              setPassword('');
-              setConfirmPassword('');
-              setTimeout(() => {
-                navigate('/');
-              }, 1500);
-            } else {
-              toast.error(t.errorOccurred);
-            }
-          } catch (loginError) {
-            toast.error(t.errorOccurred);
-          }
-        }, 1000);
+        return;
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -153,75 +128,43 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
         data: error.response?.data
       });
       
-      // Check if the error is actually a network error or if it's a server error
-      if (error.response) {
-        // Check if it's actually a success response with error status code (shouldn't happen, but handle it)
-        if (error.response.status >= 200 && error.response.status < 300 && error.response.data) {
-          // Actually successful despite being in catch block
-          toast.success(t.registerSuccess);
-          setPhone('');
-          setName('');
-          setArea('');
-          setPassword('');
-          setConfirmPassword('');
-          setTimeout(() => {
-            navigate('/');
-          }, 1500);
-        } else {
-          // Server responded with error status (4xx or 5xx)
+      // For ANY error, verify if user was actually created by attempting login
+      // This handles cases where:
+      // 1. Network error but user was created
+      // 2. Response timeout but user was created
+      // 3. Any other error but user was created
+      setTimeout(async () => {
+        try {
+          const loginCheck = await axiosInstance.post('/auth/login', { phone, password });
+          if (loginCheck.data && loginCheck.data.user) {
+            // User was created successfully - registration worked!
+            toast.success(t.registerSuccess);
+            setPhone('');
+            setName('');
+            setArea('');
+            setPassword('');
+            setConfirmPassword('');
+            setTimeout(() => {
+              navigate('/');
+            }, 1500);
+            return;
+          }
+        } catch (loginError) {
+          // Login failed - user was not created, show actual error
+          console.error('Login verification failed:', loginError);
+        }
+        
+        // If we get here, user was not created - show the actual error
+        if (error.response) {
+          // Server responded with error
           const errorMessage = error.response.data?.detail || error.response.data?.message || t.errorOccurred;
           toast.error(errorMessage);
-        }
-      } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        // Network error - but user might have been created (backend processed it)
-        // Wait a moment for backend to finish, then verify by trying to login
-        setTimeout(async () => {
-          try {
-            const loginCheck = await axiosInstance.post('/auth/login', { phone, password });
-            // If login works, registration succeeded but response was lost
-            if (loginCheck.data && loginCheck.data.user) {
-              toast.success(t.registerSuccess);
-              setPhone('');
-              setName('');
-              setArea('');
-              setPassword('');
-              setConfirmPassword('');
-              setTimeout(() => {
-                navigate('/');
-              }, 1500);
-              return;
-            }
-          } catch (loginError) {
-            // Login failed, so registration actually failed or user doesn't exist
-            console.error('Login check failed:', loginError);
-          }
-          // If we get here, registration likely failed
+        } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
           toast.error('Network error. Please check your internet connection and try again.');
-        }, 1000);
-      } else {
-        // Other errors - but verify if user was created
-        setTimeout(async () => {
-          try {
-            const loginCheck = await axiosInstance.post('/auth/login', { phone, password });
-            if (loginCheck.data && loginCheck.data.user) {
-              // User was created successfully despite error
-              toast.success(t.registerSuccess);
-              setPhone('');
-              setName('');
-              setArea('');
-              setPassword('');
-              setConfirmPassword('');
-              setTimeout(() => {
-                navigate('/');
-              }, 1500);
-            } else {
-              toast.error(error.message || t.errorOccurred);
-            }
-          } catch (loginError) {
-            toast.error(error.message || t.errorOccurred);
-          }
-        }, 1000);
-      }
+        } else {
+          toast.error(error.message || t.errorOccurred);
+        }
+      }, 1500); // Wait 1.5 seconds for backend to finish processing
     } finally {
       setLoading(false);
     }
