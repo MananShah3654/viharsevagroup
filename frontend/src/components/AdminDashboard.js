@@ -2472,7 +2472,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                       }
                                     }}
                                     data-testid={`make-admin-btn-${u.id || u._id || u.phone}`}
-                                    style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#1a237e', color: 'white' }}
+                                    style={{ fontSize: '0.85rem', padding: '6px 12px' }}
                                     disabled={loading}
                                   >
                                     {t.makeAdmin}
