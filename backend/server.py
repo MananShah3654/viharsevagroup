@@ -1086,20 +1086,23 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
     
     total_kms = sum(v.get("approx_kms", 0) for v in vihars)
     
-    # Create PDF
+    # Create PDF with margins to prevent cutting
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    # Add margins: left=0.5inch, right=0.5inch, top=0.5inch, bottom=0.5inch
+    doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                           leftMargin=0.5*inch, rightMargin=0.5*inch,
+                           topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     styles = getSampleStyleSheet()
     
-    # Add VSG Logo
+    # Add VSG Logo - reduced size to save space
     logo_path = ROOT_DIR.parent / "frontend" / "public" / "images" / "logo_vsg.jpg"
     if logo_path.exists():
         try:
-            logo = Image(str(logo_path), width=2*inch, height=2*inch)
+            logo = Image(str(logo_path), width=1.5*inch, height=1.5*inch)  # Reduced from 2*inch
             logo.hAlign = 'CENTER'
             elements.append(logo)
-            elements.append(Spacer(1, 0.2 * inch))
+            elements.append(Spacer(1, 0.15 * inch))  # Reduced spacing
         except Exception as e:
             logger.warning(f"Could not add logo to PDF: {str(e)}")
     
@@ -1116,30 +1119,82 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
     elements.append(date_info)
     elements.append(Spacer(1, 0.2 * inch))
     
-    # Table data
-    data = [['Date', 'Route No', 'From → To', 'KMs']]
+    # Table data - add Vihar Sevak and Thana columns
+    data = [['Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']]
+    
+    # Initialize participants map
+    vihar_participants_map = {}
+    
+    # For admin reports showing all vihars, get participants for each vihar
+    if current_user.get("role") == "admin" and not user_id:
+        # Get all participations for these vihars
+        vihar_id_list = [v["id"] for v in vihars]
+        all_participations = await db.participations.find(
+            {"vihar_id": {"$in": vihar_id_list}, "status": "in"},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        # Create a map of vihar_id to list of user names
+        for participation in all_participations:
+            v_id = participation["vihar_id"]
+            if v_id not in vihar_participants_map:
+                vihar_participants_map[v_id] = []
+            user = await db.users.find_one({"id": participation["user_id"]}, {"_id": 0, "name": 1, "phone": 1})
+            if user:
+                participant_name = user.get("name", user.get("phone", "Unknown"))
+                vihar_participants_map[v_id].append(participant_name)
     
     for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):
+        # Get user name(s)
+        if current_user.get("role") == "admin" and not user_id:
+            # Show all participants for this vihar - each on a new line
+            participants = vihar_participants_map.get(vihar["id"], [])
+            if participants:
+                # Create Paragraph with line breaks for PDF
+                user_name_para = Paragraph("<br/>".join(participants), styles['Normal'])
+            else:
+                user_name_para = Paragraph("No participants", styles['Normal'])
+        elif user_id:
+            # Show the specific user name from user_info
+            user_name_val = user_info.get("name", user_info.get("phone", "User")) if user_info else "User"
+            user_name_para = Paragraph(user_name_val, styles['Normal'])
+        else:
+            # For regular users, show their own name
+            user_name_val = current_user.get("name", current_user.get("phone", "User"))
+            user_name_para = Paragraph(user_name_val, styles['Normal'])
+        
+        # Calculate Thana (sadhu + sadhviji count)
+        thana_count = vihar.get('sadhu_bhagvant', 0) + vihar.get('sadhviji_bhagvant', 0)
+        
         data.append([
             vihar.get('vihar_date', 'N/A'),
             vihar.get('route_no', 'N/A'),
+            user_name_para,
+            str(thana_count),
             f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}",
             str(vihar.get('approx_kms', 0))
         ])
     
-    # Add total row
-    data.append(['', '', 'TOTAL KMs:', f"{total_kms:.2f}"])
+    # Add total row - ensure all 6 columns are present
+    data.append(['', '', '', '', 'TOTAL KMs:', f"{total_kms:.2f}"])
     
-    # Create table
-    table = Table(data, colWidths=[1.5*inch, 1.2*inch, 3*inch, 1*inch])
+    # Create table - adjust column widths to fit page with margins
+    # A4 width: 8.27 inch, with 0.5 inch margins on each side = 7.27 inch available
+    # Column widths: Date, Route No, Vihar Sevak, Thana, From → To, KMs
+    table = Table(data, colWidths=[1.0*inch, 0.9*inch, 1.3*inch, 0.7*inch, 2.3*inch, 0.8*inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7FA588')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (2, 1), (2, -2), 'LEFT'),  # Vihar Sevak column - left align
+        ('VALIGN', (2, 1), (2, -2), 'TOP'),  # Vihar Sevak column - top align for multi-line
         ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),  # Reduced from 12 to 10 for better fit
+        ('FONTSIZE', (0, 1), (-1, -2), 9),  # Smaller font for data rows
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('TOPPADDING', (2, 1), (2, -2), 6),  # Extra padding for Vihar Sevak column
+        ('BOTTOMPADDING', (2, 1), (2, -2), 6),  # Extra padding for Vihar Sevak column
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#F5F1E8')),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
@@ -1234,17 +1289,17 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
             # Adjust row height and column width for logo
             ws.row_dimensions[1].height = 100
             ws.column_dimensions['A'].width = 20
-            # Title starts from column D
+            # Title starts from column D (logo in A, title spans D to F for 6 columns)
             ws.merge_cells('D1:F1')
             title_cell = ws['D1']
         except Exception as e:
             logger.warning(f"Could not add logo to Excel: {str(e)}")
             logo_exists = False
-            ws.merge_cells('A1:D1')
+            ws.merge_cells('A1:F1')
             title_cell = ws['A1']
             ws.row_dimensions[1].height = 30
     else:
-        ws.merge_cells('A1:D1')
+        ws.merge_cells('A1:F1')
         title_cell = ws['A1']
         ws.row_dimensions[1].height = 30
     
@@ -1259,14 +1314,14 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
         ws.merge_cells('D2:F2')
         date_cell = ws['D2']
     else:
-        ws.merge_cells('A2:D2')
+        ws.merge_cells('A2:F2')
         date_cell = ws['A2']
     date_cell.value = f"Report Period: {start_date.strftime('%d %b %Y')} to {now.strftime('%d %b %Y')}"
     date_cell.alignment = Alignment(horizontal="center")
     ws.row_dimensions[2].height = 20
     
-    # Headers
-    headers = ['Date', 'Route No', 'From → To', 'KMs']
+    # Headers - add Vihar Sevak and Thana columns
+    headers = ['Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']
     start_col = 1 if not (logo_path.exists()) else 1  # Start from column 1, but adjust if logo exists
     for col, header in enumerate(headers, start_col):
         cell = ws.cell(row=4, column=col)
@@ -1277,40 +1332,96 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
     
     ws.row_dimensions[4].height = 25
     
+    # For admin reports showing all vihars, get participants for each vihar
+    vihar_participants_map = {}
+    if current_user.get("role") == "admin" and not user_id:
+        # Get all participations for these vihars
+        vihar_id_list = [v["id"] for v in vihars]
+        all_participations = await db.participations.find(
+            {"vihar_id": {"$in": vihar_id_list}, "status": "in"},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        # Create a map of vihar_id to list of user names
+        for participation in all_participations:
+            v_id = participation["vihar_id"]
+            if v_id not in vihar_participants_map:
+                vihar_participants_map[v_id] = []
+            user = await db.users.find_one({"id": participation["user_id"]}, {"_id": 0, "name": 1, "phone": 1})
+            if user:
+                user_name_val = user.get("name", user.get("phone", "Unknown"))
+                vihar_participants_map[v_id].append(user_name_val)
+    
     # Data rows
     row = 5
     for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):
+        # Get user name(s)
+        if current_user.get("role") == "admin" and not user_id:
+            # Show all participants for this vihar - each on a new line
+            participants = vihar_participants_map.get(vihar["id"], [])
+            if participants:
+                # Join with newline for Excel (Excel will wrap text)
+                user_name_str = "\n".join(participants)
+            else:
+                user_name_str = "No participants"
+        elif user_id:
+            # Show the specific user name from user_info
+            user_name_str = user_info.get("name", user_info.get("phone", "User")) if user_info else "User"
+        else:
+            # For regular users, show their own name
+            user_name_str = current_user.get("name", current_user.get("phone", "User"))
+        
+        # Calculate Thana (sadhu + sadhviji count)
+        thana_count = vihar.get('sadhu_bhagvant', 0) + vihar.get('sadhviji_bhagvant', 0)
+        
         ws.cell(row=row, column=1, value=vihar.get('vihar_date', 'N/A'))
         ws.cell(row=row, column=2, value=vihar.get('route_no', 'N/A'))
-        ws.cell(row=row, column=3, value=f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}")
-        ws.cell(row=row, column=4, value=vihar.get('approx_kms', 0))
+        user_name_cell = ws.cell(row=row, column=3, value=user_name_str)
+        # Enable text wrapping for user name cell
+        user_name_cell.alignment = Alignment(wrap_text=True, vertical="top")
+        # Adjust row height if there are multiple usernames (approximately 15 pixels per line)
+        if current_user.get("role") == "admin" and not user_id:
+            participants = vihar_participants_map.get(vihar["id"], [])
+            if len(participants) > 1:
+                ws.row_dimensions[row].height = 15 * len(participants) + 5  # Extra space for padding
+        ws.cell(row=row, column=4, value=thana_count)
+        ws.cell(row=row, column=5, value=f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}")
+        ws.cell(row=row, column=6, value=vihar.get('approx_kms', 0))
         row += 1
     
     # Total row
     total_row = row
-    ws.cell(row=total_row, column=3, value="TOTAL KMs:").font = Font(bold=True)
-    ws.cell(row=total_row, column=4, value=total_kms).font = Font(bold=True)
-    ws.cell(row=total_row, column=3).alignment = Alignment(horizontal="right")
-    
-    # Style total row
-    for col in range(1, 5):
+    # Clear all cells in total row first
+    for col in range(1, 7):
+        ws.cell(row=total_row, column=col, value='')
         ws.cell(row=total_row, column=col).fill = PatternFill(
             start_color="F5F1E8", end_color="F5F1E8", fill_type="solid"
         )
+    # Set TOTAL KMs label and value
+    total_label_cell = ws.cell(row=total_row, column=5, value="TOTAL KMs:")
+    total_label_cell.font = Font(bold=True)
+    total_label_cell.alignment = Alignment(horizontal="right", vertical="center")
+    total_value_cell = ws.cell(row=total_row, column=6, value=total_kms)
+    total_value_cell.font = Font(bold=True)
+    total_value_cell.alignment = Alignment(horizontal="right", vertical="center")
+    # Ensure row height is adequate
+    ws.row_dimensions[total_row].height = 25
     
     # Summary row
     summary_row = total_row + 2
-    ws.merge_cells(f'A{summary_row}:D{summary_row}')
+    ws.merge_cells(f'A{summary_row}:F{summary_row}')
     summary_cell = ws.cell(row=summary_row, column=1)
     summary_cell.value = f"Summary: Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs"
     summary_cell.font = Font(bold=True)
     summary_cell.alignment = Alignment(horizontal="center")
     
-    # Column widths
-    ws.column_dimensions['A'].width = 15
-    ws.column_dimensions['B'].width = 15
-    ws.column_dimensions['C'].width = 40
-    ws.column_dimensions['D'].width = 12
+    # Column widths - adjusted for new columns
+    ws.column_dimensions['A'].width = 12  # Date
+    ws.column_dimensions['B'].width = 12  # Route No
+    ws.column_dimensions['C'].width = 20  # Vihar Sevak
+    ws.column_dimensions['D'].width = 10  # Thana
+    ws.column_dimensions['E'].width = 35  # From → To
+    ws.column_dimensions['F'].width = 12  # KMs
     
     # Save to buffer
     buffer = BytesIO()
@@ -1355,7 +1466,13 @@ async def ping():
 # This ensures CORS headers are applied to all routes including OPTIONS preflight
 cors_origins = os.environ.get('CORS_ORIGINS', '*')
 if cors_origins == '*':
-    allow_origins = ['*']
+    # In development, explicitly allow localhost origins (can't use '*' with credentials)
+    allow_origins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+    ]
 else:
     allow_origins = [origin.strip() for origin in cors_origins.split(',')]
 

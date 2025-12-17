@@ -290,8 +290,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       fetchUsers();
     } else if (activeTab === 'reports') {
       fetchReports();
+      // Also fetch users for the dropdown in reports tab
+      if (users.length === 0) {
+        fetchUsers();
+      }
     }
   }, [activeTab, reportPeriod, selectedUserId]);
+  
+  // Fetch users on component mount to populate dropdown
+  useEffect(() => {
+    fetchUsers();
+  }, []); // Empty dependency array - only run once on mount
 
   const fetchVihars = async () => {
     setLoading(true);
@@ -1949,7 +1958,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <p><strong>{t.sadhuBhagvant}:</strong> {vihar.sadhu_bhagvant}</p>
                     <p><strong>{t.sadhvijiBhagvant}:</strong> {vihar.sadhviji_bhagvant || 0}</p>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                      {vihar.wheelchair && <span className="status-badge status-in">♿ {t.wheelchair}</span>}
+                      {vihar.wheelchair > 0 && <span className="status-badge status-in">♿ {t.wheelchair}</span>}
                       {vihar.luggage && <span className="status-badge status-out">🧳 {t.luggage}</span>}
                       {vihar.dori && <span className="status-badge status-in">📦 {t.dori}</span>}
                       {vihar.car_required && <span className="status-badge status-out">🚗 {t.carRequired}</span>}
@@ -2049,12 +2058,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           </td>
                           <td style={{ padding: '15px' }}>
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                              {vihar.wheelchair && <span className="status-badge status-in" style={{ fontSize: '11px', padding: '3px 8px' }}>♿</span>}
+                              {vihar.wheelchair > 0 && <span className="status-badge status-in" style={{ fontSize: '11px', padding: '3px 8px' }}>♿</span>}
                               {vihar.luggage && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🧳</span>}
                               {vihar.dori && <span className="status-badge status-in" style={{ fontSize: '11px', padding: '3px 8px' }}>📦</span>}
                               {vihar.car_required && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🚗</span>}
                               {vihar.activa && <span className="status-badge status-out" style={{ fontSize: '11px', padding: '3px 8px' }}>🏍️</span>}
-                              {!vihar.wheelchair && !vihar.luggage && !vihar.dori && !vihar.car_required && !vihar.activa && (
+                              {vihar.wheelchair <= 0 && !vihar.luggage && !vihar.dori && !vihar.car_required && !vihar.activa && (
                                 <span style={{ fontSize: '12px', color: '#999' }}>None</span>
                               )}
                             </div>

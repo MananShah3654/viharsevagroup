@@ -61,7 +61,14 @@ axiosInstance.interceptors.response.use(
     if (!error.response) {
       if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
         console.error('Network error - check backend URL:', BACKEND_URL);
-        error.userMessage = 'Network error. Please check your internet connection.';
+        console.error('Full error:', error);
+        // More helpful error message
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocalhost) {
+          error.userMessage = `Cannot connect to backend at ${BACKEND_URL}. Make sure the backend server is running on port 8000.`;
+        } else {
+          error.userMessage = 'Network error. Please check your internet connection.';
+        }
       }
     }
     return Promise.reject(error);
