@@ -19,6 +19,7 @@ const translations = {
     login: 'Login',
     register: 'Register',
     ourTeam: 'Our Leadership Team',
+    viharPathGuide: 'Vihar Path Margdarshika',
   },
   gu: {
     title: 'વિહાર સેવા ગ્રુપ',
@@ -36,6 +37,7 @@ const translations = {
     login: 'લોગિન',
     register: 'રજીસ્ટર',
     ourTeam: 'અમારી લીડરશિપ ટીમ',
+    viharPathGuide: 'વિહાર પથ માર્ગદર્શિકા',
   },
 };
 
@@ -150,6 +152,12 @@ const LandingPage = ({ language, setLanguage }) => {
               onClick={() => navigate('/register')}
             >
               {t.register}
+            </button>
+            <button 
+              className="btn-landing btn-tertiary-landing" 
+              onClick={() => navigate('/vihar-path-margdarshika')}
+            >
+              📍 {t.viharPathGuide}
             </button>
           </div>
         </div>

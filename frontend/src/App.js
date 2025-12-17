@@ -7,6 +7,7 @@ import RegisterScreen from './components/RegisterScreen';
 import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
 import LandingPage from './components/LandingPage';
+import ViharPathMargdarshika from './components/ViharPathMargdarshika';
 import { Toaster } from './components/ui/sonner';
 
 // Backend URL configuration
@@ -178,6 +179,12 @@ function App() {
               ) : (
                 <Navigate to="/" replace />
               )
+            }
+          />
+          <Route
+            path="/vihar-path-margdarshika"
+            element={
+              <ViharPathMargdarshika language={language} setLanguage={setLanguage} />
             }
           />
         </Routes>

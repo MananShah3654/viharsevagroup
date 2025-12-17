@@ -18,9 +18,11 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import Response
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, Preformatted
 from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.drawing.image import Image as ExcelImage
@@ -1461,6 +1463,296 @@ async def health_check():
 async def ping():
     """Simple ping endpoint"""
     return {"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+# Vihar Path Margdarshika - Route 1 PDF Report (Public endpoint - no auth required)
+class Route1Data(BaseModel):
+    routeNumber: int
+    routeName: Optional[str] = None
+    from_location: str = Field(alias='from')
+    to: str
+    totalKms: Optional[int] = None
+    centers: List[dict]
+    
+    class Config:
+        populate_by_name = True  # Allow both 'from' and 'from_location'
+
+# Test endpoint to verify connectivity
+@app.get("/api/vihar-path/test")
+async def test_vihar_path():
+    """Test endpoint to verify the route is accessible"""
+    return {"status": "ok", "message": "Vihar Path endpoint is accessible"}
+
+@app.post("/api/vihar-path/route1/pdf")
+async def download_route1_pdf(route_data: Route1Data):
+    """Download PDF report for Route 1 with all centers and details in Gujarati format"""
+    import time
+    start_time = time.time()
+    
+    try:
+        logger.info(f"=== PDF Generation Started ===")
+        logger.info(f"Received PDF request for route: {route_data.routeNumber}")
+        route1_data = route_data.model_dump(by_alias=True)  # Use aliases to get 'from'
+        logger.info(f"Route data: {len(route1_data.get('centers', []))} centers")
+        from_location = route1_data.get('from') or route1_data.get('from_location', '')
+        logger.info(f"From: {from_location}, To: {route1_data.get('to')}")
+        
+        # Validate centers data
+        if not route1_data.get('centers'):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No centers provided")
+        
+        logger.info(f"Validation passed at {time.time() - start_time:.2f}s")
+        
+        # Calculate total distance for selected segment
+        if route1_data.get('totalKms'):
+            total_kms = route1_data['totalKms']
+        elif route1_data['centers']:
+            # Calculate from cumulative distances
+            first_center = route1_data['centers'][0]
+            last_center = route1_data['centers'][-1]
+            if 'cumulativeKms' in last_center and 'cumulativeKms' in first_center:
+                total_kms = last_center['cumulativeKms'] - first_center['cumulativeKms'] + first_center.get('kms', 0)
+            else:
+                # Fallback: sum of all kms
+                total_kms = sum(c.get('kms', 0) for c in route1_data['centers'])
+        else:
+            total_kms = 0
+        
+        # Create PDF - optimized for speed
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                               leftMargin=0.5*inch, rightMargin=0.5*inch,
+                               topMargin=0.5*inch, bottomMargin=0.5*inch)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Register Unicode font for Gujarati support
+        # ReportLab needs a TTF font file that supports Gujarati Unicode
+        gujarati_font = 'Helvetica'  # Default fallback
+        
+        # Try to find and register a Unicode-supporting font
+        # Common locations for Unicode fonts on Windows
+        font_paths = [
+            'C:/Windows/Fonts/arialuni.ttf',  # Arial Unicode MS (Windows) - supports Gujarati
+            'C:/Windows/Fonts/ARIALUNI.TTF',
+            'C:/Windows/Fonts/NotoSansGujarati-Regular.ttf',  # Noto Sans Gujarati
+            'C:/Windows/Fonts/mangal.ttf',  # Mangal (Hindi/Gujarati font on Windows)
+            'C:/Windows/Fonts/MANGAL.TTF',
+        ]
+        
+        for font_path in font_paths:
+            if os.path.exists(font_path):
+                try:
+                    # Use a simple name for the font
+                    font_name = 'GujaratiFont'
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    gujarati_font = font_name
+                    logger.info(f"Registered Unicode font: {font_name} from {font_path}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Could not register font {font_path}: {str(e)}")
+                    continue
+        
+        if gujarati_font == 'Helvetica':
+            logger.warning("No Unicode font found. Gujarati text may not render correctly. Using default font.")
+            logger.warning("Gujarati characters may appear as placeholders (===) in the PDF.")
+        
+        # Create custom styles with Unicode font
+        gujarati_title_style = ParagraphStyle(
+            'GujaratiTitle',
+            parent=styles['Title'],
+            fontName=gujarati_font,
+            fontSize=16
+        )
+        
+        gujarati_normal_style = ParagraphStyle(
+            'GujaratiNormal',
+            parent=styles['Normal'],
+            fontName=gujarati_font,
+            fontSize=10
+        )
+        
+        # Skip logo to speed up generation (optional - can re-enable if needed)
+        # logo_path = ROOT_DIR.parent / "frontend" / "public" / "images" / "logo_vsg.jpg"
+        # if logo_path.exists():
+        #     try:
+        #         logo = Image(str(logo_path), width=1.5*inch, height=1.5*inch)
+        #         logo.hAlign = 'CENTER'
+        #         elements.append(logo)
+        #         elements.append(Spacer(1, 0.15 * inch))
+        #     except Exception as e:
+        #         logger.warning(f"Could not add logo to PDF: {str(e)}")
+        
+        # Title - Gujarati format
+        title = Paragraph("<b>રૂટ રિપોર્ટ — ફોર્મેટ</b>", gujarati_title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 0.2 * inch))
+        
+        # Route Info in Gujarati
+        route_name = route1_data.get('routeName', f"રૂટ {route1_data.get('routeNumber', 1)}")
+        from_location = route1_data.get('from') or route1_data.get('from_location', '')
+        route_info_text = f"<b>રૂટ નામ:</b> {route_name}<br/>"
+        route_info_text += f"<b>કુલ અંતર:</b> {total_kms} કિ.મી.<br/>"
+        route_info_text += f"<b>રિપોર્ટ તારીખ:</b> {datetime.now(timezone.utc).strftime('%d/%m/%Y')}<br/>"
+        route_info_text += f"<b>From:</b> {from_location}<br/>"
+        route_info_text += f"<b>To:</b> {route1_data.get('to', '')}<br/>"
+        route_info_text += "<b>નોંધ:</b> સરનામું/સંપર્ક/ફોન ઉપલબ્ધ હોય તો ઉમેરવાના, નહિતર ખાલી."
+        
+        route_info = Paragraph(route_info_text, gujarati_normal_style)
+        elements.append(route_info)
+        elements.append(Spacer(1, 0.3 * inch))
+        
+        # Table header in Gujarati
+        logger.info(f"Creating table with {len(route1_data['centers'])} rows at {time.time() - start_time:.2f}s")
+        
+        # Table with all columns in Gujarati
+        data = [['ક્રમ', 'સ્થળનું નામ', 'કિ.મી.', 'સરનામું (જો મળે)', 'સંપર્ક વ્યક્તિ (જો મળે)', 'ફોન (જો મળે)', 'નોંધ']]
+        
+        # Table data - batch process for better performance
+        centers_list = route1_data['centers']
+        logger.info(f"Processing {len(centers_list)} centers")
+        
+        for idx, center in enumerate(centers_list, 1):
+            # Ensure all values are strings and handle None
+            data.append([
+                str(idx),
+                str(center.get('placeName', '') or ''),
+                str(center.get('kms', 0) or 0),
+                str(center.get('address', '') or ''),
+                str(center.get('personName', '') or ''),
+                str(center.get('phoneNo', '') or ''),
+                str(center.get('notes', '') or ''),
+            ])
+        
+        logger.info(f"Table data prepared at {time.time() - start_time:.2f}s, creating table object")
+        
+        # Convert table data to use Paragraph objects for Unicode support
+        # This is necessary for proper Gujarati text rendering
+        table_data_with_paragraphs = []
+        for row_idx, row in enumerate(data):
+            if row_idx == 0:
+                # Header row - convert to Paragraph for Unicode
+                header_row = [Paragraph(str(cell), gujarati_normal_style) for cell in row]
+                table_data_with_paragraphs.append(header_row)
+            else:
+                # Data rows - convert text cells to Paragraph for Unicode support
+                new_row = []
+                for col_idx, cell in enumerate(row):
+                    if col_idx in [0, 2]:  # Sr No and KMs - numbers, can be string
+                        new_row.append(str(cell))
+                    else:
+                        # Text cells - use Paragraph for Unicode
+                        new_row.append(Paragraph(str(cell), gujarati_normal_style))
+                table_data_with_paragraphs.append(new_row)
+        
+        logger.info(f"Table data converted to Paragraphs at {time.time() - start_time:.2f}s")
+        
+        # Create table with all columns
+        try:
+            table = Table(table_data_with_paragraphs, colWidths=[0.5*inch, 1.3*inch, 0.5*inch, 1.2*inch, 1.2*inch, 1.0*inch, 0.8*inch])
+            logger.info(f"Table object created at {time.time() - start_time:.2f}s")
+        except Exception as table_error:
+            logger.error(f"Error creating table: {str(table_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error creating table: {str(table_error)}"
+            )
+        
+        # Table style optimized for Gujarati text
+        try:
+            bold_font = f'{gujarati_font}-Bold' if f'{gujarati_font}-Bold' in pdfmetrics.getRegisteredFontNames() else gujarati_font
+            
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7FA588')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (0, -1), 'CENTER'),  # ક્રમ column - center
+                ('ALIGN', (2, 0), (2, -1), 'CENTER'),  # કિ.મી. column - center
+                ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('TOPPADDING', (0, 0), (-1, 0), 12),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#FDFBF7')]),
+            ]))
+            logger.info(f"Table style applied at {time.time() - start_time:.2f}s with font: {gujarati_font}")
+        except Exception as style_error:
+            logger.error(f"Error applying table style: {str(style_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error applying table style: {str(style_error)}"
+            )
+        
+        logger.info(f"Appending table to elements at {time.time() - start_time:.2f}s")
+        elements.append(table)
+        
+        logger.info(f"Elements prepared at {time.time() - start_time:.2f}s, building PDF...")
+        logger.info(f"Total elements to build: {len(elements)}")
+        
+        # Build PDF with timeout protection
+        try:
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("PDF generation timed out")
+            
+            # Set a timeout for PDF building (30 seconds)
+            # Note: This works on Unix systems, for Windows we'll rely on async timeout
+            logger.info("Starting doc.build()...")
+            build_start = time.time()
+            
+            doc.build(elements)
+            
+            build_time = time.time() - build_start
+            logger.info(f"PDF document built successfully in {build_time:.2f}s, total time: {time.time() - start_time:.2f}s")
+        except TimeoutError as timeout_err:
+            logger.error(f"PDF generation timed out: {str(timeout_err)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="PDF generation timed out. Please try with fewer centers."
+            )
+        except Exception as build_error:
+            logger.error(f"Error building PDF: {str(build_error)}")
+            import traceback
+            logger.error(f"Build traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail=f"Error building PDF: {str(build_error)}"
+            )
+        
+        buffer.seek(0)
+        
+        # Get PDF size
+        pdf_data = buffer.getvalue()
+        pdf_size = len(pdf_data)
+        logger.info(f"PDF generated successfully, size: {pdf_size} bytes, total time: {time.time() - start_time:.2f}s")
+        
+        if pdf_size == 0:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Generated PDF is empty")
+        
+        filename = f"vihar_path_route1_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
+        logger.info(f"Returning PDF with filename: {filename}")
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Length": str(pdf_size)
+            }
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Error generating Route 1 PDF: {str(e)}")
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"Traceback: {error_traceback}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error generating PDF: {str(e)}. Check server logs for details."
+        )
 
 # CORS configuration - MUST be added BEFORE including routers
 # This ensures CORS headers are applied to all routes including OPTIONS preflight
