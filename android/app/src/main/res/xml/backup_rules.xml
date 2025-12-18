@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup Rules
+    
+    Excludes sensitive data from Android backup.
+    WebView cookies and cache should not be backed up.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="WebViewCookies.xml" />
+    <exclude domain="database" path="webview.db" />
+    <exclude domain="database" path="webviewCache.db" />
+</full-backup-content>
+

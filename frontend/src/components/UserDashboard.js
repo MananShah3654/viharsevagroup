@@ -112,18 +112,31 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [showTop10, setShowTop10] = useState(true); // Show top 10 entries
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10); // Items per page for pagination
+  const [dataLoaded, setDataLoaded] = useState({
+    allVihars: false,
+    myVihars: false,
+    reports: false
+  });
 
   useEffect(() => {
-    if (activeTab === 'allVihars') {
+    if (activeTab === 'allVihars' && !dataLoaded.allVihars) {
       fetchAllVihars();
       setCurrentPage(1); // Reset to first page when switching tabs
-    } else if (activeTab === 'myVihars') {
+    } else if (activeTab === 'myVihars' && !dataLoaded.myVihars) {
       fetchMyVihars();
       setCurrentPage(1); // Reset to first page when switching tabs
-    } else if (activeTab === 'reports') {
+    } else if (activeTab === 'reports' && !dataLoaded.reports) {
       fetchReports();
     }
-  }, [activeTab, reportPeriod]);
+  }, [activeTab]);
+  
+  // Reset and fetch reports when period changes
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      setDataLoaded(prev => ({ ...prev, reports: false }));
+      fetchReports();
+    }
+  }, [reportPeriod]);
 
   // Initialize photo preview when user data is available
   useEffect(() => {
@@ -136,8 +149,10 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const fetchAllVihars = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/vihars');
+      // Add pagination parameters for faster loading
+      const response = await axiosInstance.get('/vihars?skip=0&limit=100');
       setVihars(response.data);
+      setDataLoaded(prev => ({ ...prev, allVihars: true }));
     } catch (error) {
       toast.error('Failed to fetch vihars');
     } finally {
@@ -152,6 +167,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       // Backend now only returns opted-in vihars, but filter here as well for safety
       const optedInVihars = response.data.filter(vihar => vihar.user_status === 'in');
       setMyVihars(optedInVihars);
+      setDataLoaded(prev => ({ ...prev, myVihars: true }));
     } catch (error) {
       toast.error('Failed to fetch my vihars');
     } finally {
@@ -164,6 +180,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     try {
       const response = await axiosInstance.get(`/reports/summary?period=${reportPeriod}`);
       setReportData(response.data);
+      setDataLoaded(prev => ({ ...prev, reports: true }));
     } catch (error) {
       toast.error('Failed to fetch reports');
     } finally {
@@ -213,8 +230,10 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       toast.success(t.participationUpdated);
       // Refresh both tabs to ensure consistency
       if (activeTab === 'allVihars') {
+        setDataLoaded(prev => ({ ...prev, allVihars: false }));
         fetchAllVihars();
       } else if (activeTab === 'myVihars') {
+        setDataLoaded(prev => ({ ...prev, myVihars: false, allVihars: false }));
         fetchMyVihars();
         // Also refresh all vihars to update status everywhere
         fetchAllVihars();

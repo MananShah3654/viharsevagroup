@@ -27,16 +27,66 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.drawing.image import Image as ExcelImage
 from io import BytesIO
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+import time
+
+# Import cache
+try:
+    from cache import cache, cache_key_user, cache_key_vihars_list, cache_key_vihar, cache_key_participants, cache_key_reports
+except ImportError:
+    # Fallback if cache module not available
+    cache = None
+    cache_key_user = cache_key_vihars_list = cache_key_vihar = cache_key_participants = cache_key_reports = None
+
+# Import rate limiter
+try:
+    from rate_limiter import RateLimitMiddleware
+except ImportError:
+    # Fallback if rate limiter not available
+    RateLimitMiddleware = None
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# Setup logging early (before middleware that might use it)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Setup logging early (before middleware that might use it)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# MongoDB connection with optimized connection pooling
 # URL encode password if provided via env, otherwise use default with encoded password
 default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Riaana123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
 mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
 db_name = os.environ.get('DB_NAME', 'ClusterCC')
-client = AsyncIOMotorClient(mongo_url)
+
+# Optimized connection pool settings for high concurrency
+# maxPoolSize: Maximum number of connections in the pool (default: 100)
+# minPoolSize: Minimum number of connections to maintain (default: 0)
+# maxIdleTimeMS: Max time a connection can be idle before being closed (default: None)
+# connectTimeoutMS: Time to wait for connection (default: 20000)
+# serverSelectionTimeoutMS: Time to wait for server selection (default: 30000)
+client = AsyncIOMotorClient(
+    mongo_url,
+    maxPoolSize=200,  # Increased for 1000+ concurrent requests
+    minPoolSize=20,   # Keep connections warm
+    maxIdleTimeMS=45000,  # Close idle connections after 45s
+    connectTimeoutMS=10000,
+    serverSelectionTimeoutMS=10000,
+    retryWrites=True,
+    retryReads=True,
+    compressors='snappy,zlib',  # Enable compression
+    zlibCompressionLevel=6
+)
 db = client[db_name]
 
 # Security
@@ -49,14 +99,25 @@ security = HTTPBearer()
 
 # Removed MSG91 - Simple login with phone/password
 
-app = FastAPI()
+app = FastAPI(
+    title="Vihar Seva Group API",
+    description="High-performance API for Vihar Seva Group",
+    version="2.0.0"
+)
 api_router = APIRouter(prefix="/api")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Add compression middleware for faster responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # Compress responses > 1KB
+
+# Add rate limiting middleware (if available)
+if RateLimitMiddleware:
+    try:
+        app.add_middleware(RateLimitMiddleware, default_limit=100, window=60)
+        logger.info("Rate limiting middleware enabled")
+    except Exception as e:
+        logger.warning(f"Failed to enable rate limiting: {str(e)}")
+else:
+    logger.warning("Rate limiting middleware not available - skipping")
 
 # ===== MODELS =====
 
@@ -678,6 +739,14 @@ async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = 
         )
         vihar_dict = vihar.model_dump()
         await db.vihars.insert_one(vihar_dict)
+        
+        # Invalidate cache
+        if cache:
+            await cache.delete(cache_key_vihars_list({}))
+            await cache.delete(cache_key_reports("weekly"))
+            await cache.delete(cache_key_reports("monthly"))
+            await cache.delete(cache_key_reports("yearly"))
+        
         logger.info(f"Vihar created successfully: {vihar.id}")
         return vihar_dict
     except Exception as e:
@@ -723,6 +792,12 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request,
             {"id": vihar_id},
             {"$set": update_data}
         )
+        
+        # Invalidate cache
+        if cache:
+            await cache.delete(cache_key_vihar(vihar_id))
+            await cache.delete(cache_key_vihars_list({}))
+            await cache.delete(cache_key_participants(vihar_id))
         
         # Get updated vihar
         updated_vihar = await db.vihars.find_one({"id": vihar_id}, {"_id": 0})
@@ -791,17 +866,44 @@ async def create_vihar_from_whatsapp(whatsapp_data: WhatsAppMessage, admin: dict
         )
 
 @api_router.get("/vihars")
-async def get_all_vihars(current_user: dict = Depends(get_current_user)):
-    """Get all vihars - users see limited details"""
-    vihars = await db.vihars.find({}, {"_id": 0}).to_list(1000)
+async def get_all_vihars(
+    current_user: dict = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 100,
+    request: Request = None
+):
+    """Get all vihars - users see limited details (Optimized with pagination and caching)"""
+    # Check cache first
+    cache_key = f"vihars:user:{current_user['id']}:skip:{skip}:limit:{limit}"
+    if cache:
+        cached_result = await cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
     
-    # For each vihar, get participation info
+    # Optimized: Fetch vihars with pagination
+    vihars = await db.vihars.find(
+        {}, 
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Optimized: Fetch all participations in one query (fixes N+1 problem)
+    vihar_ids = [v["id"] for v in vihars]
+    participations_cursor = db.participations.find(
+        {"vihar_id": {"$in": vihar_ids}, "user_id": current_user["id"]},
+        {"_id": 0, "vihar_id": 1, "status": 1}
+    )
+    participations = await participations_cursor.to_list(1000)
+    
+    # Create participation map for O(1) lookup
+    participation_map = {p["vihar_id"]: p["status"] for p in participations}
+    
+    # Add participation status to vihars
     for vihar in vihars:
-        participation = await db.participations.find_one(
-            {"vihar_id": vihar["id"], "user_id": current_user["id"]},
-            {"_id": 0}
-        )
-        vihar["user_status"] = participation["status"] if participation else None
+        vihar["user_status"] = participation_map.get(vihar["id"])
+    
+    # Cache result for 60 seconds
+    if cache:
+        await cache.set(cache_key, vihars, ttl=60)
     
     return vihars
 
@@ -819,10 +921,24 @@ async def get_vihar_detail(vihar_id: str, current_user: dict = Depends(get_curre
     )
     vihar["user_status"] = participation["status"] if participation else None
     
-    # If admin, get all participants
+    # If admin, get all participants (with caching)
     if current_user.get("role") == "admin":
-        participants = await db.participations.find({"vihar_id": vihar_id}, {"_id": 0}).to_list(1000)
-        vihar["participants"] = participants
+        participants_cache_key = f"participants:{vihar_id}"
+        if cache:
+            cached_participants = await cache.get(participants_cache_key)
+            if cached_participants is not None:
+                vihar["participants"] = cached_participants
+            else:
+                participants = await db.participations.find({"vihar_id": vihar_id}, {"_id": 0}).to_list(1000)
+                vihar["participants"] = participants
+                await cache.set(participants_cache_key, participants, ttl=120)  # Cache for 2 min
+        else:
+            participants = await db.participations.find({"vihar_id": vihar_id}, {"_id": 0}).to_list(1000)
+            vihar["participants"] = participants
+    
+    # Cache result for 60 seconds
+    if cache:
+        await cache.set(cache_key, vihar, ttl=60)
     
     return vihar
 
@@ -957,11 +1073,45 @@ async def assign_users_to_vihar(vihar_id: str, assign_data: AssignUsersRequest):
             errors.append(f"Error assigning user {user_id}: {str(e)}")
             logger.error(f"Error assigning user {user_id} to vihar {vihar_id}: {str(e)}")
     
+    # Invalidate cache after assignment
+    if cache:
+        await cache.delete(cache_key_participants(vihar_id))
+        await cache.delete(f"vihar:detail:{vihar_id}:user:*")  # Invalidate all user caches
+    
     return {
         "status": "success",
         "message": f"Assigned {assigned_count} user(s) to vihar",
         "assigned_count": assigned_count,
         "errors": errors if errors else None
+    }
+
+@api_router.delete("/vihars/{vihar_id}/participants/{participation_id}", dependencies=[Depends(get_admin_user)])
+async def remove_participant_from_vihar(vihar_id: str, participation_id: str):
+    """Remove a participant from a vihar (Admin only)"""
+    # Check if vihar exists
+    vihar = await db.vihars.find_one({"id": vihar_id})
+    if not vihar:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
+    
+    # Check if participation exists
+    participation = await db.participations.find_one({"id": participation_id, "vihar_id": vihar_id})
+    if not participation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participation not found")
+    
+    # Delete the participation
+    result = await db.participations.delete_one({"id": participation_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to remove participant")
+    
+    # Invalidate cache
+    if cache:
+        await cache.delete(cache_key_participants(vihar_id))
+        await cache.delete(f"vihar:detail:{vihar_id}:user:*")  # Invalidate all user caches for this vihar
+    
+    return {
+        "status": "success",
+        "message": "Participant removed successfully"
     }
 
 @api_router.get("/vihars/user/my-vihars")
@@ -985,59 +1135,90 @@ async def get_my_vihars(current_user: dict = Depends(get_current_user)):
 # Reports
 @api_router.get("/reports/summary")
 async def get_report_summary(period: str, user_id: str = None, current_user: dict = Depends(get_current_user)):
-    """Get vihar reports - weekly, monthly, yearly. Admin can get user-wise reports."""
+    """Get vihar reports - weekly, monthly, yearly. Admin can get user-wise reports. (Optimized with caching)"""
+    # Check cache first
+    cache_key = cache_key_reports(period, user_id or current_user.get("id")) if cache else None
+    if cache and cache_key:
+        cached_result = await cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+    
     now = datetime.now(timezone.utc)
     
     # Calculate date range
     if period == "weekly":
         start_date = now - timedelta(days=7)
+        cache_ttl = 60  # Cache for 1 minute
     elif period == "monthly":
         start_date = now - timedelta(days=30)
+        cache_ttl = 300  # Cache for 5 minutes
     elif period == "yearly":
         start_date = now - timedelta(days=365)
+        cache_ttl = 600  # Cache for 10 minutes
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid period")
     
     start_date_str = start_date.isoformat()
     
+    # Optimized: Use aggregation pipeline for better performance
     # For admin with user_id filter - get specific user's vihars
     if current_user.get("role") == "admin" and user_id:
         participations = await db.participations.find(
             {"user_id": user_id, "created_at": {"$gte": start_date_str}},
-            {"_id": 0}
+            {"_id": 0, "vihar_id": 1}
         ).to_list(1000)
         vihar_ids = [p["vihar_id"] for p in participations]
-        vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        if vihar_ids:
+            vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        else:
+            vihars = []
         
-        # Get user info
-        user_info = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        # Get user info (with caching)
+        user_cache_key = cache_key_user(user_id) if cache else None
+        if cache and user_cache_key:
+            user_info = await cache.get(user_cache_key)
+            if user_info is None:
+                user_info = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+                if user_info:
+                    await cache.set(user_cache_key, user_info, ttl=300)
+        else:
+            user_info = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     # For admin without user_id - all vihars
     elif current_user.get("role") == "admin":
         vihars = await db.vihars.find(
             {"created_at": {"$gte": start_date_str}},
             {"_id": 0}
-        ).to_list(1000)
+        ).sort("created_at", -1).to_list(1000)
         user_info = None
     else:
         # For users - only their opted-in vihars (status = 'in')
         participations = await db.participations.find(
             {"user_id": current_user["id"], "status": "in", "created_at": {"$gte": start_date_str}},
-            {"_id": 0}
+            {"_id": 0, "vihar_id": 1}
         ).to_list(1000)
         vihar_ids = [p["vihar_id"] for p in participations]
-        vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        if vihar_ids:
+            vihars = await db.vihars.find({"id": {"$in": vihar_ids}}, {"_id": 0}).to_list(1000)
+        else:
+            vihars = []
         user_info = current_user
     
     total_vihars = len(vihars)
     total_kms = sum(v.get("approx_kms", 0) for v in vihars)
     
-    return {
+    result = {
         "period": period,
         "total_vihars": total_vihars,
         "total_kms": total_kms,
         "vihars": vihars,
         "user_info": user_info
     }
+    
+    # Cache result
+    if cache and cache_key:
+        await cache.set(cache_key, result, ttl=cache_ttl)
+    
+    return result
 
 # Report Downloads
 @api_router.get("/reports/download/pdf")
@@ -1768,6 +1949,7 @@ if cors_origins == '*':
 else:
     allow_origins = [origin.strip() for origin in cors_origins.split(',')]
 
+# CORS middleware - add before other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -1775,7 +1957,25 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
+
+# Performance monitoring middleware
+@app.middleware("http")
+async def performance_middleware(request: Request, call_next):
+    """Log slow requests and add performance headers"""
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # Add performance headers
+    response.headers["X-Process-Time"] = str(round(process_time, 4))
+    
+    # Log slow requests (> 1 second)
+    if process_time > 1.0:
+        logger.warning(f"Slow request: {request.method} {request.url.path} took {process_time:.2f}s")
+    
+    return response
 
 # Include API router AFTER CORS middleware
 app.include_router(api_router)

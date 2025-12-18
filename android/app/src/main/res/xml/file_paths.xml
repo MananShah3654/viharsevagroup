@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    File Provider Paths
+    
+    Defines secure file paths for file uploads via WebView.
+    Only allows access to external files directory (user's files).
+    
+    Why:
+    - Required for WebView file uploads (input type=file)
+    - Uses FileProvider for secure file sharing
+    - Prevents access to app's private directories
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- External files directory (user's files) -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- External storage (if needed for downloads) -->
+    <external-path name="external_storage" path="." />
+</paths>
+

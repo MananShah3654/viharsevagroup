@@ -534,51 +534,283 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .route-selectors {
-    grid-template-columns: 1fr;
+  .vihar-path-page {
+    padding-bottom: 20px;
   }
-  
-  .btn-search {
-    width: 100%;
+
+  .vihar-path-header {
+    padding: 15px 0;
   }
-  
+
   .vihar-path-header-content {
     flex-direction: column;
     text-align: center;
+    gap: 10px;
+    padding: 0 15px;
   }
-  
+
   .vihar-path-title {
-    font-size: 22px;
+    font-size: 20px;
+    margin: 10px 0;
   }
-  
+
+  .btn-back,
+  .landing-language-toggle-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    width: auto;
+    min-width: 120px;
+  }
+
+  .vihar-path-container {
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+
+  .route-selection-card {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
+  .route-selection-card h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .route-selectors {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .route-select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .btn-download-pdf {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    margin-top: 15px;
+  }
+
+  .centers-section {
+    padding: 20px 15px;
+  }
+
+  .centers-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .route-report-header {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
+  .route-report-header h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  .route-info {
+    gap: 8px;
+  }
+
+  .route-info p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .route-table-container {
+    padding: 15px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .route-table {
+    font-size: 12px;
+    min-width: 800px; /* Ensure table doesn't get too compressed */
+  }
+
+  .route-table th {
+    padding: 10px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .route-table td {
+    padding: 8px 6px;
+    font-size: 11px;
+    word-break: break-word;
+  }
+
+  .route-table th:first-child,
+  .route-table td:first-child {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .route-table th:nth-child(3),
+  .route-table td:nth-child(3) {
+    width: 60px;
+    min-width: 60px;
+  }
+
   .centers-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .center-card {
+    padding: 15px;
+  }
+
+  .center-header h3 {
+    font-size: 16px;
   }
 
   .vihar-path-tabs {
-    flex-direction: column;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px;
+    gap: 8px;
   }
 
   .tab-btn {
-    width: 100%;
+    min-width: 120px;
+    padding: 12px 15px;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .network-section {
+    padding: 20px 15px;
   }
 
   .network-stats {
     grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    padding: 15px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 12px;
   }
 
   .routes-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .route-connection-card {
+    padding: 15px;
   }
 
   .route-connection-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .route-path {
+    font-size: 16px;
+    flex-wrap: wrap;
   }
 
   .btn-show-route {
     width: 100%;
+    padding: 10px;
+  }
+
+  .route-connection-details {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .all-centers-section {
+    padding: 20px 15px;
+  }
+
+  .all-centers-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .center-details {
+    gap: 10px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .detail-label {
+    font-size: 12px;
+  }
+
+  .detail-value {
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .phone-link {
+    font-size: 14px;
+    word-break: break-all;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .vihar-path-title {
+    font-size: 18px;
+  }
+
+  .route-selection-card h2 {
+    font-size: 18px;
+  }
+
+  .route-table {
+    font-size: 11px;
+    min-width: 700px;
+  }
+
+  .route-table th {
+    padding: 8px 4px;
+    font-size: 10px;
+  }
+
+  .route-table td {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+
+  .tab-btn {
+    min-width: 100px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-size: 24px;
   }
 }
 

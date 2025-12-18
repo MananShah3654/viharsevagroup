@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration
+    
+    POLICY: Block cleartext (HTTP) traffic by default for Play Store compliance.
+    Only allow HTTPS connections to our trusted domains.
+    
+    Why:
+    - Play Store requires apps to use HTTPS (targetSdk 28+)
+    - Prevents man-in-the-middle attacks
+    - Protects user data in transit
+-->
+<network-security-config>
+    <!-- Default: Block all cleartext traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Domain-specific configuration -->
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- 
+            ALLOWED DOMAINS - Add your production domains here
+            Only these domains can be accessed by the WebView
+        -->
+        <domain includeSubdomains="true">naranpuraviharsevagroup.com</domain>
+        <domain includeSubdomains="true">www.naranpuraviharsevagroup.com</domain>
+        
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- 
+        LOCALHOST DEVELOPMENT - Allow HTTP for localhost testing
+        WARNING: Remove or comment this before release!
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
+

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ViharSevaGroupWebView" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/progress_bar_color</item>
+        <item name="colorPrimaryVariant">@color/progress_bar_color</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+    </style>
+</resources>
+
