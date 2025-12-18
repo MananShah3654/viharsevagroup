@@ -87,6 +87,11 @@ const translations = {
     close: 'Close',
     noParticipants: 'No participants yet',
     usersAssigned: 'Users assigned successfully!',
+    removeParticipant: 'Remove Participant',
+    participantRemoved: 'Participant removed successfully!',
+    confirmRemoveParticipant: 'Are you sure you want to remove this participant from the vihar?',
+    confirm: 'Confirm',
+    cancel: 'Cancel',
     gridView: 'Grid View',
     listView: 'List View',
     showTop10: 'Show Top 10',
@@ -194,6 +199,11 @@ const translations = {
     close: 'બંધ કરો',
     noParticipants: 'હજુ સુધી કોઈ સહભાગી નથી',
     usersAssigned: 'યુઝર્સ સફળતાપૂર્વક સોંપ્યા!',
+    removeParticipant: 'સહભાગી દૂર કરો',
+    participantRemoved: 'સહભાગી સફળતાપૂર્વક દૂર કર્યો!',
+    confirmRemoveParticipant: 'શું તમે ખરેખર આ સહભાગીને વિહારમાંથી દૂર કરવા માંગો છો?',
+    confirm: 'પુષ્ટિ કરો',
+    cancel: 'રદ કરો',
     gridView: 'ગ્રિડ વ્યૂ',
     listView: 'લિસ્ટ વ્યૂ',
     filterByDate: 'તારીખ દ્વારા ફિલ્ટર કરો',
@@ -249,6 +259,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [userCurrentPage, setUserCurrentPage] = useState(1); // Current page for users
   const [userItemsPerPage] = useState(10); // Items per page for users
   const [userNameFilter, setUserNameFilter] = useState(''); // Filter users by name
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmDialogData, setConfirmDialogData] = useState({
+    message: '',
+    onConfirm: null,
+    onCancel: null
+  });
 
   // Vihar form
   const [viharForm, setViharForm] = useState({
@@ -283,30 +299,43 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   });
   const [photoPreview, setPhotoPreview] = useState(null);
 
+  const [dataLoaded, setDataLoaded] = useState({
+    vihars: false,
+    users: false,
+    reports: false
+  });
+
   useEffect(() => {
-    if (activeTab === 'vihars') {
+    if (activeTab === 'vihars' && !dataLoaded.vihars) {
       fetchVihars();
-    } else if (activeTab === 'users') {
+    } else if (activeTab === 'users' && !dataLoaded.users) {
       fetchUsers();
     } else if (activeTab === 'reports') {
-      fetchReports();
-      // Also fetch users for the dropdown in reports tab
-      if (users.length === 0) {
+      if (!dataLoaded.reports) {
+        fetchReports();
+      }
+      // Also fetch users for the dropdown in reports tab only if needed
+      if (users.length === 0 && !dataLoaded.users) {
         fetchUsers();
       }
     }
-  }, [activeTab, reportPeriod, selectedUserId]);
+  }, [activeTab]);
   
-  // Fetch users on component mount to populate dropdown
+  // Reset and fetch reports when period or user changes
   useEffect(() => {
-    fetchUsers();
-  }, []); // Empty dependency array - only run once on mount
+    if (activeTab === 'reports') {
+      setDataLoaded(prev => ({ ...prev, reports: false }));
+      fetchReports();
+    }
+  }, [reportPeriod, selectedUserId]);
 
   const fetchVihars = async () => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/vihars');
+      // Add pagination parameters for faster loading
+      const response = await axiosInstance.get('/vihars?skip=0&limit=100');
       setVihars(response.data);
+      setDataLoaded(prev => ({ ...prev, vihars: true }));
     } catch (error) {
       toast.error('Failed to fetch vihars');
     } finally {
@@ -389,6 +418,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       setUsers(response.data);
       setUserCurrentPage(1); // Reset to first page when users are fetched
       setUserNameFilter(''); // Reset name filter when users are fetched
+      setDataLoaded(prev => ({ ...prev, users: true }));
     } catch (error) {
       toast.error('Failed to fetch users');
     } finally {
@@ -428,6 +458,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       setSelectedUserIds([]);
       setAssignViharId(null);
       // Refresh vihars to show updated participant counts
+      setDataLoaded(prev => ({ ...prev, vihars: false }));
       fetchVihars();
     } catch (error) {
       toast.error('Failed to assign users');
@@ -447,6 +478,45 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
+  // Custom confirmation dialog
+  const showConfirm = (message, onConfirm, onCancel = null) => {
+    setConfirmDialogData({
+      message,
+      onConfirm: () => {
+        setShowConfirmDialog(false);
+        if (onConfirm) onConfirm();
+      },
+      onCancel: () => {
+        setShowConfirmDialog(false);
+        if (onCancel) onCancel();
+      }
+    });
+    setShowConfirmDialog(true);
+  };
+
+  const handleRemoveParticipant = async (participationId) => {
+    showConfirm(
+      t.confirmRemoveParticipant,
+      async () => {
+        setLoading(true);
+    try {
+      await axiosInstance.delete(`/vihars/${previewViharId}/participants/${participationId}`);
+      toast.success(t.participantRemoved);
+      // Refresh participants list
+      await fetchViharParticipants(previewViharId);
+      // Refresh vihars to update participant counts
+      setDataLoaded(prev => ({ ...prev, vihars: false }));
+      fetchVihars();
+    } catch (error) {
+      toast.error('Failed to remove participant');
+      console.error('Error removing participant:', error);
+    } finally {
+      setLoading(false);
+    }
+      }
+    );
+  };
+
   const fetchReports = async () => {
     setLoading(true);
     try {
@@ -455,6 +525,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         : `/reports/summary?period=${reportPeriod}`;
       const response = await axiosInstance.get(url);
       setReportData(response.data);
+      setDataLoaded(prev => ({ ...prev, reports: true }));
     } catch (error) {
       toast.error('Failed to fetch reports');
     } finally {
@@ -463,16 +534,19 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleDeleteVihar = async (viharId) => {
-    if (!window.confirm(t.confirmDelete)) {
-      return;
-    }
-    try {
-      await axiosInstance.delete(`/vihars/${viharId}`);
-      toast.success(t.viharDeleted);
-      fetchVihars();
-    } catch (error) {
-      toast.error('Failed to delete vihar');
-    }
+    showConfirm(
+      t.confirmDelete,
+      async () => {
+        try {
+          await axiosInstance.delete(`/vihars/${viharId}`);
+          toast.success(t.viharDeleted);
+          setDataLoaded(prev => ({ ...prev, vihars: false }));
+          fetchVihars();
+        } catch (error) {
+          toast.error('Failed to delete vihar');
+        }
+      }
+    );
   };
 
   const handleDownloadPDF = async () => {
@@ -896,6 +970,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         toast.success(t.viharCreated);
         setShowCreateVihar(false);
         resetViharForm();
+        setDataLoaded(prev => ({ ...prev, vihars: false }));
         fetchVihars();
       } else {
         throw new Error('Unexpected response status');
@@ -910,6 +985,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         toast.success(t.viharCreated);
         setShowCreateVihar(false);
         resetViharForm();
+        setDataLoaded(prev => ({ ...prev, vihars: false }));
         fetchVihars();
       }
     } finally {
@@ -957,6 +1033,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         setShowCreateVihar(false);
         setEditingViharId(null);
         resetViharForm();
+        setDataLoaded(prev => ({ ...prev, vihars: false }));
         fetchVihars();
       } else {
         throw new Error('Unexpected response status');
@@ -970,6 +1047,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         setShowCreateVihar(false);
         setEditingViharId(null);
         resetViharForm();
+        setDataLoaded(prev => ({ ...prev, vihars: false }));
         fetchVihars();
       }
     } finally {
@@ -1085,6 +1163,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         setShowAddUser(false);
         setEditingUserId(null);
         resetUserForm();
+        setDataLoaded(prev => ({ ...prev, users: false }));
         fetchUsers();
       } else {
         throw new Error('Unexpected response status');
@@ -1098,6 +1177,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         setShowAddUser(false);
         setEditingUserId(null);
         resetUserForm();
+        setDataLoaded(prev => ({ ...prev, users: false }));
         fetchUsers();
       }
     } finally {
@@ -1106,27 +1186,29 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleDeleteUser = async (user) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
-    }
-    
-    // Use the most reliable ID - prefer id, fallback to _id, then phone
-    const userId = user.id || user._id || user.phone;
-    if (!userId) {
-      toast.error('Cannot delete user: Invalid user ID');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await axiosInstance.delete(`/admin/users/${userId}`);
-      toast.success('User deleted successfully!');
-      fetchUsers();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to delete user');
-    } finally {
-      setLoading(false);
-    }
+    showConfirm(
+      'Are you sure you want to delete this user? This action cannot be undone.',
+      async () => {
+        // Use the most reliable ID - prefer id, fallback to _id, then phone
+        const userId = user.id || user._id || user.phone;
+        if (!userId) {
+          toast.error('Cannot delete user: Invalid user ID');
+          return;
+        }
+        
+        setLoading(true);
+        try {
+          await axiosInstance.delete(`/admin/users/${userId}`);
+          toast.success('User deleted successfully!');
+          setDataLoaded(prev => ({ ...prev, users: false }));
+          fetchUsers();
+        } catch (error) {
+          toast.error(error.response?.data?.detail || 'Failed to delete user');
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
   };
 
   const handleAddUser = async () => {
@@ -1168,6 +1250,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       toast.success(t.userCreated);
       setShowAddUser(false);
       resetUserForm();
+      setDataLoaded(prev => ({ ...prev, users: false }));
       fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create user');
@@ -1230,6 +1313,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         toast.success(t.roleUpdated);
         // Refresh the user list after a short delay to ensure backend has updated
         setTimeout(() => {
+          setDataLoaded(prev => ({ ...prev, users: false }));
           fetchUsers();
         }, 500);
       } else {
@@ -2373,17 +2457,18 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               // List View
               return (
                 <>
-                  <table className="data-table">
+                  <div className="data-table-wrapper">
+                  <table className="data-table" style={{ minWidth: '800px' }}>
                     <thead>
                       <tr>
-                        <th>{t.name}</th>
-                        <th>{t.area}</th>
-                        <th>{t.age}</th>
-                        <th>{t.role}</th>
-                        <th>Is Admin</th>
-                        <th>{t.phone}</th>
-                        <th>Car</th>
-                        <th>{t.actions}</th>
+                        <th style={{ minWidth: '120px' }}>{t.name}</th>
+                        <th style={{ minWidth: '100px' }}>{t.area}</th>
+                        <th style={{ minWidth: '60px' }}>{t.age}</th>
+                        <th style={{ minWidth: '80px' }}>{t.role}</th>
+                        <th style={{ minWidth: '90px' }}>Is Admin</th>
+                        <th style={{ minWidth: '120px' }}>{t.phone}</th>
+                        <th style={{ minWidth: '60px' }}>Car</th>
+                        <th style={{ minWidth: '200px' }}>{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2476,9 +2561,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                         toast.error('Cannot update role: User phone number is missing');
                                         return;
                                       }
-                                      if (window.confirm(`Are you sure you want to make ${u.name || u.phone} an admin? They will have full admin access.`)) {
-                                        handleUpdateRole(u.phone, 'admin');
-                                      }
+                                      showConfirm(
+                                        `Are you sure you want to make ${u.name || u.phone} an admin? They will have full admin access.`,
+                                        () => handleUpdateRole(u.phone, 'admin')
+                                      );
                                     }}
                                     data-testid={`make-admin-btn-${u.id || u._id || u.phone}`}
                                     style={{ fontSize: '0.85rem', padding: '6px 12px' }}
@@ -2497,9 +2583,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                       toast.error('Cannot update role: User phone number is missing');
                                       return;
                                     }
-                                    if (window.confirm(`Are you sure you want to remove admin access from ${u.name || u.phone}?`)) {
-                                      handleUpdateRole(u.phone, 'user');
-                                    }
+                                    showConfirm(
+                                      `Are you sure you want to remove admin access from ${u.name || u.phone}?`,
+                                      () => handleUpdateRole(u.phone, 'user')
+                                    );
                                   }}
                                   data-testid={`make-user-btn-${u.id || u._id || u.phone}`}
                                   style={{ fontSize: '0.85rem', padding: '6px 12px' }}
@@ -2515,6 +2602,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       })}
                     </tbody>
                   </table>
+                  </div>
 
                   {/* Pagination */}
                   {paginationData.totalPages > 1 && (
@@ -2736,15 +2824,16 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             onClick={(e) => e.stopPropagation()} 
             style={{
               background: 'white',
-              borderRadius: '12px',
-              padding: '30px',
+              borderRadius: window.innerWidth <= 768 ? '8px' : '12px',
+              padding: window.innerWidth <= 768 ? '20px' : '30px',
               maxWidth: '900px',
               width: '100%',
-              maxHeight: '90vh',
+              maxHeight: window.innerWidth <= 768 ? '95vh' : '90vh',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+              position: 'relative'
             }}
           >
             {/* Header */}
@@ -2859,30 +2948,67 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                 {/* Participants Table */}
                 {viharParticipants.length === 0 ? (
                   <div style={{ 
-                    padding: '60px 20px', 
+                    padding: window.innerWidth <= 768 ? '40px 15px' : '60px 20px', 
                     textAlign: 'center',
                     background: '#f8f9fa',
                     borderRadius: '8px',
                     border: '2px dashed #e0e0e0'
                   }}>
-                    <div style={{ fontSize: '48px', marginBottom: '15px' }}>👥</div>
-                    <p style={{ fontSize: '16px', color: '#666', margin: 0 }}>{t.noParticipants}</p>
+                    <div style={{ fontSize: window.innerWidth <= 768 ? '36px' : '48px', marginBottom: '15px' }}>👥</div>
+                    <p style={{ fontSize: window.innerWidth <= 768 ? '14px' : '16px', color: '#666', margin: 0 }}>{t.noParticipants}</p>
                   </div>
                 ) : (
                   <div style={{ 
                     flex: 1,
                     overflowY: 'auto',
+                    overflowX: 'auto',
                     border: '2px solid #e0e0e0',
                     borderRadius: '8px',
-                    background: '#fafafa'
+                    background: '#fafafa',
+                    maxHeight: window.innerWidth <= 768 ? 'calc(95vh - 300px)' : 'calc(90vh - 300px)',
+                    WebkitOverflowScrolling: 'touch',
+                    minHeight: window.innerWidth <= 768 ? '200px' : '300px'
                   }}>
+                    <div className="data-table-wrapper" style={{ margin: 0, padding: 0 }}>
                     <table className="data-table" style={{ width: '100%', margin: 0, background: 'white' }}>
                       <thead>
                         <tr style={{ background: '#f8f9fa', position: 'sticky', top: 0, zIndex: 10 }}>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Name</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Phone</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#2C3E50' }}>Area</th>
-                          <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#2C3E50' }}>Status</th>
+                          <th style={{ 
+                            padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                            textAlign: 'left', 
+                            fontWeight: '600', 
+                            color: '#2C3E50',
+                            fontSize: window.innerWidth <= 768 ? '13px' : '14px'
+                          }}>Name</th>
+                          <th style={{ 
+                            padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                            textAlign: 'left', 
+                            fontWeight: '600', 
+                            color: '#2C3E50',
+                            fontSize: window.innerWidth <= 768 ? '13px' : '14px'
+                          }}>Phone</th>
+                          <th style={{ 
+                            padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                            textAlign: 'left', 
+                            fontWeight: '600', 
+                            color: '#2C3E50',
+                            fontSize: window.innerWidth <= 768 ? '13px' : '14px'
+                          }}>Area</th>
+                          <th style={{ 
+                            padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                            textAlign: 'center', 
+                            fontWeight: '600', 
+                            color: '#2C3E50',
+                            fontSize: window.innerWidth <= 768 ? '13px' : '14px'
+                          }}>Status</th>
+                          <th style={{ 
+                            padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                            textAlign: 'center', 
+                            fontWeight: '600', 
+                            color: '#2C3E50',
+                            fontSize: window.innerWidth <= 768 ? '13px' : '14px',
+                            minWidth: '80px'
+                          }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2896,22 +3022,42 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
                             onMouseOut={(e) => e.currentTarget.style.background = 'white'}
                           >
-                            <td style={{ padding: '12px', fontWeight: '500' }}>
+                            <td style={{ 
+                              padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                              fontWeight: '500',
+                              fontSize: window.innerWidth <= 768 ? '13px' : '14px',
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}>
                               {participant.user?.name || 'N/A'}
                             </td>
-                            <td style={{ padding: '12px', color: '#666' }}>
+                            <td style={{ 
+                              padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                              color: '#666',
+                              fontSize: window.innerWidth <= 768 ? '12px' : '13px',
+                              whiteSpace: 'nowrap'
+                            }}>
                               {participant.user?.phone || 'N/A'}
                             </td>
-                            <td style={{ padding: '12px', color: '#666' }}>
+                            <td style={{ 
+                              padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                              color: '#666',
+                              fontSize: window.innerWidth <= 768 ? '12px' : '13px',
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}>
                               {participant.user?.area || 'N/A'}
                             </td>
-                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <td style={{ 
+                              padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                              textAlign: 'center'
+                            }}>
                               <span 
                                 className={`status-badge ${participant.status === 'in' ? 'status-in' : 'status-out'}`}
                                 style={{
-                                  padding: '6px 12px',
+                                  padding: window.innerWidth <= 768 ? '4px 10px' : '6px 12px',
                                   borderRadius: '20px',
-                                  fontSize: '13px',
+                                  fontSize: window.innerWidth <= 768 ? '11px' : '13px',
                                   fontWeight: '600',
                                   display: 'inline-block'
                                 }}
@@ -2919,10 +3065,50 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                                 {participant.status === 'in' ? '✓ In' : '✗ Out'}
                               </span>
                             </td>
+                            <td style={{ 
+                              padding: window.innerWidth <= 768 ? '10px 8px' : '12px', 
+                              textAlign: 'center'
+                            }}>
+                              <button
+                                onClick={() => handleRemoveParticipant(participant.participation_id)}
+                                disabled={loading}
+                                style={{
+                                  padding: window.innerWidth <= 768 ? '6px 10px' : '8px 16px',
+                                  borderRadius: '6px',
+                                  border: 'none',
+                                  background: '#dc3545',
+                                  color: 'white',
+                                  cursor: loading ? 'not-allowed' : 'pointer',
+                                  fontSize: window.innerWidth <= 768 ? '11px' : '13px',
+                                  fontWeight: '600',
+                                  transition: 'all 0.2s',
+                                  opacity: loading ? 0.6 : 1,
+                                  minHeight: window.innerWidth <= 768 ? '32px' : '36px',
+                                  minWidth: window.innerWidth <= 768 ? '60px' : '80px',
+                                  touchAction: 'manipulation'
+                                }}
+                                onMouseOver={(e) => {
+                                  if (!loading) {
+                                    e.target.style.background = '#c82333';
+                                    e.target.style.transform = 'translateY(-1px)';
+                                  }
+                                }}
+                                onMouseOut={(e) => {
+                                  if (!loading) {
+                                    e.target.style.background = '#dc3545';
+                                    e.target.style.transform = 'translateY(0)';
+                                  }
+                                }}
+                                title={t.removeParticipant}
+                              >
+                                {window.innerWidth <= 768 ? '🗑️' : '🗑️ ' + t.removeParticipant}
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </>
@@ -2959,14 +3145,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             style={{
               background: 'white',
               borderRadius: '12px',
-              padding: '30px',
+              padding: window.innerWidth <= 768 ? '20px' : '30px',
               maxWidth: '800px',
               width: '100%',
-              maxHeight: '90vh',
+              maxHeight: window.innerWidth <= 768 ? '95vh' : '90vh',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+              position: 'relative'
             }}
           >
             {/* Header */}
@@ -3035,11 +3222,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             <div style={{ 
               flex: 1,
               overflowY: 'auto',
+              overflowX: 'hidden',
               border: '2px solid #e0e0e0',
               borderRadius: '8px',
               background: '#fafafa',
               marginBottom: '20px',
-              minHeight: '300px'
+              minHeight: window.innerWidth <= 768 ? '200px' : '300px',
+              maxHeight: window.innerWidth <= 768 ? 'calc(95vh - 350px)' : 'calc(90vh - 350px)',
+              WebkitOverflowScrolling: 'touch',
+              padding: '5px'
             }}>
               {loading && users.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -3085,7 +3276,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            padding: '15px',
+                            padding: window.innerWidth <= 768 ? '12px' : '15px',
                             marginBottom: '8px',
                             borderRadius: '8px',
                             background: isSelected ? '#E8F5E9' : 'white',
@@ -3093,7 +3284,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             borderLeft: `4px solid ${isSelected ? '#7FA588' : 'transparent'}`,
                             cursor: 'pointer',
                             transition: 'all 0.2s',
-                            boxShadow: isSelected ? '0 2px 8px rgba(127, 165, 136, 0.2)' : 'none'
+                            boxShadow: isSelected ? '0 2px 8px rgba(127, 165, 136, 0.2)' : 'none',
+                            minHeight: '44px',
+                            touchAction: 'manipulation'
                           }}
                           onMouseOver={(e) => {
                             if (!isSelected) {
@@ -3114,18 +3307,27 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             onChange={() => {}}
                             onClick={(e) => e.stopPropagation()}
                             style={{
-                              marginRight: '15px',
-                              width: '20px',
-                              height: '20px',
+                              marginRight: window.innerWidth <= 768 ? '10px' : '15px',
+                              width: window.innerWidth <= 768 ? '24px' : '20px',
+                              height: window.innerWidth <= 768 ? '24px' : '20px',
+                              minWidth: window.innerWidth <= 768 ? '24px' : '20px',
+                              minHeight: window.innerWidth <= 768 ? '24px' : '20px',
                               cursor: 'pointer',
-                              accentColor: '#7FA588'
+                              accentColor: '#7FA588',
+                              flexShrink: 0
                             }}
                           />
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          <div style={{ 
+                            flex: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: window.innerWidth <= 768 ? '10px' : '15px',
+                            minWidth: 0
+                          }}>
                             {u.photo && (
                               <div style={{
-                                width: '45px',
-                                height: '45px',
+                                width: window.innerWidth <= 768 ? '40px' : '45px',
+                                height: window.innerWidth <= 768 ? '40px' : '45px',
                                 borderRadius: '50%',
                                 overflow: 'hidden',
                                 border: '2px solid #e0e0e0',
@@ -3159,37 +3361,45 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             )}
                             {!u.photo && (
                               <div style={{
-                                width: '45px',
-                                height: '45px',
+                                width: window.innerWidth <= 768 ? '40px' : '45px',
+                                height: window.innerWidth <= 768 ? '40px' : '45px',
                                 borderRadius: '50%',
                                 background: '#7FA588',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 color: 'white',
-                                fontSize: '20px',
+                                fontSize: window.innerWidth <= 768 ? '18px' : '20px',
                                 fontWeight: 'bold',
                                 flexShrink: 0
                               }}>
                                 {(u.name || u.phone || 'U').charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                               <div style={{ 
                                 fontWeight: '600', 
-                                fontSize: '15px', 
+                                fontSize: window.innerWidth <= 768 ? '14px' : '15px', 
                                 color: '#2C3E50',
                                 marginBottom: '4px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                wordBreak: 'break-word',
+                                overflowWrap: 'break-word',
+                                whiteSpace: 'normal',
+                                lineHeight: '1.4'
                               }}>
                                 {u.name || 'No Name'}
                               </div>
-                              <div style={{ fontSize: '13px', color: '#666', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                                <span>📱 {u.phone}</span>
-                                {u.area && <span>📍 {u.area}</span>}
-                                {u.role === 'admin' && <span style={{ color: '#7FA588', fontWeight: '600' }}>👑 Admin</span>}
+                              <div style={{ 
+                                fontSize: window.innerWidth <= 768 ? '12px' : '13px', 
+                                color: '#666', 
+                                display: 'flex', 
+                                gap: window.innerWidth <= 768 ? '8px' : '15px', 
+                                flexWrap: 'wrap',
+                                flexDirection: window.innerWidth <= 768 ? 'column' : 'row'
+                              }}>
+                                <span style={{ whiteSpace: 'nowrap' }}>📱 {u.phone}</span>
+                                {u.area && <span style={{ whiteSpace: 'nowrap' }}>📍 {u.area}</span>}
+                                {u.role === 'admin' && <span style={{ color: '#7FA588', fontWeight: '600', whiteSpace: 'nowrap' }}>👑 Admin</span>}
                               </div>
                             </div>
                             {isSelected && (
@@ -3217,7 +3427,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               })()}
             </div>
 
-            {/* Footer */}
+            {/* Footer - Sticky on Mobile */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -3225,19 +3435,36 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               paddingTop: '20px',
               borderTop: '2px solid #f0f0f0',
               flexWrap: 'wrap',
-              gap: '15px'
+              gap: window.innerWidth <= 768 ? '10px' : '15px',
+              background: 'white',
+              position: window.innerWidth <= 768 ? 'sticky' : 'relative',
+              bottom: 0,
+              zIndex: 10,
+              marginTop: 'auto'
             }}>
-              <div style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>
-                <span style={{ color: '#7FA588', fontWeight: '600', fontSize: '16px' }}>{selectedUserIds.length}</span> user(s) selected
+              <div style={{ 
+                fontSize: window.innerWidth <= 768 ? '13px' : '14px', 
+                color: '#666', 
+                fontWeight: '500',
+                width: window.innerWidth <= 768 ? '100%' : 'auto',
+                textAlign: window.innerWidth <= 768 ? 'center' : 'left',
+                marginBottom: window.innerWidth <= 768 ? '5px' : '0'
+              }}>
+                <span style={{ color: '#7FA588', fontWeight: '600', fontSize: window.innerWidth <= 768 ? '15px' : '16px' }}>{selectedUserIds.length}</span> user(s) selected
               </div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: window.innerWidth <= 768 ? '8px' : '10px', 
+                flexWrap: 'wrap',
+                width: window.innerWidth <= 768 ? '100%' : 'auto'
+              }}>
                 <button 
                   onClick={() => {
                     setShowAssignModal(false);
                     setUserSearchTerm('');
                   }}
                   style={{
-                    padding: '10px 20px',
+                    padding: window.innerWidth <= 768 ? '12px 16px' : '10px 20px',
                     borderRadius: '8px',
                     border: '2px solid #e0e0e0',
                     background: 'white',
@@ -3245,7 +3472,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     cursor: 'pointer',
                     fontSize: '14px',
                     fontWeight: '500',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    flex: window.innerWidth <= 768 ? '1' : 'none',
+                    minHeight: '44px',
+                    touchAction: 'manipulation'
                   }}
                   onMouseOver={(e) => {
                     e.target.style.borderColor = '#999';
@@ -3262,7 +3492,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                   onClick={handleAssignUsers}
                   disabled={loading || selectedUserIds.length === 0}
                   style={{
-                    padding: '10px 24px',
+                    padding: window.innerWidth <= 768 ? '12px 16px' : '10px 24px',
                     borderRadius: '8px',
                     border: 'none',
                     background: selectedUserIds.length === 0 ? '#ccc' : '#7FA588',
@@ -3272,7 +3502,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     fontWeight: '600',
                     transition: 'all 0.2s',
                     opacity: selectedUserIds.length === 0 ? 0.6 : 1,
-                    boxShadow: selectedUserIds.length > 0 ? '0 4px 15px rgba(127, 165, 136, 0.3)' : 'none'
+                    boxShadow: selectedUserIds.length > 0 ? '0 4px 15px rgba(127, 165, 136, 0.3)' : 'none',
+                    flex: window.innerWidth <= 768 ? '1' : 'none',
+                    minHeight: '44px',
+                    touchAction: 'manipulation'
                   }}
                   onMouseOver={(e) => {
                     if (selectedUserIds.length > 0 && !loading) {
@@ -3292,6 +3525,140 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                   {loading ? '⏳ Assigning...' : `✓ ${t.assign} (${selectedUserIds.length})`}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowConfirmDialog(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '20px'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: window.innerWidth <= 768 ? '25px' : '35px',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+              borderTop: '4px solid var(--sage)'
+            }}
+          >
+            {/* Icon */}
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'rgba(220, 53, 69, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                fontSize: '32px'
+              }}>
+                ⚠️
+              </div>
+            </div>
+
+            {/* Message */}
+            <h3 style={{
+              margin: '0 0 15px 0',
+              color: '#2C3E50',
+              fontSize: window.innerWidth <= 768 ? '18px' : '20px',
+              fontWeight: '600',
+              textAlign: 'center',
+              lineHeight: '1.4'
+            }}>
+              {confirmDialogData.message}
+            </h3>
+
+            {/* Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              marginTop: '25px',
+              flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={confirmDialogData.onCancel || (() => setShowConfirmDialog(false))}
+                style={{
+                  padding: window.innerWidth <= 768 ? '12px 20px' : '10px 24px',
+                  borderRadius: '8px',
+                  border: '2px solid #e0e0e0',
+                  background: 'white',
+                  color: '#666',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  flex: window.innerWidth <= 768 ? '1' : 'none',
+                  minHeight: '44px',
+                  touchAction: 'manipulation'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.borderColor = '#999';
+                  e.target.style.background = '#f5f5f5';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.borderColor = '#e0e0e0';
+                  e.target.style.background = 'white';
+                }}
+              >
+                {t.cancel}
+              </button>
+              <button
+                onClick={confirmDialogData.onConfirm}
+                style={{
+                  padding: window.innerWidth <= 768 ? '12px 20px' : '10px 24px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#dc3545',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  flex: window.innerWidth <= 768 ? '1' : 'none',
+                  minHeight: '44px',
+                  touchAction: 'manipulation',
+                  boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = '#c82333';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(220, 53, 69, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = '#dc3545';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(220, 53, 69, 0.3)';
+                }}
+              >
+                {t.confirm}
+              </button>
             </div>
           </div>
         </div>

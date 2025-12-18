@@ -47,8 +47,10 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
     setLoading(true);
     try {
       const response = await axiosInstance.post('/auth/login', { phone, password });
-      toast.success(t.loginSuccess);
+      // Navigate immediately after login without waiting for toast
       onLogin(response.data.user, response.data.access_token);
+      // Show success toast but don't block navigation
+      setTimeout(() => toast.success(t.loginSuccess), 100);
     } catch (error) {
       console.error('Login error:', error);
       let errorMessage = t.errorOccurred;

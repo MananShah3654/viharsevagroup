@@ -1,0 +1,54 @@
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #dc3545;
+  color: white;
+  padding: 12px 20px;
+  z-index: 10000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.offline-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.offline-content svg {
+  flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .offline-banner {
+    padding: 10px 15px;
+  }
+  
+  .offline-content {
+    font-size: 13px;
+    gap: 8px;
+  }
+  
+  .offline-content svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+

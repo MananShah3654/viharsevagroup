@@ -9,6 +9,10 @@ import UserDashboard from './components/UserDashboard';
 import LandingPage from './components/LandingPage';
 import ViharPathMargdarshika from './components/ViharPathMargdarshika';
 import { Toaster } from './components/ui/sonner';
+import SplashScreen from './components/SplashScreen';
+import ConnectivityCheck from './components/ConnectivityCheck';
+import ErrorBoundary from './components/ErrorBoundary';
+import { initWebView, isWebView, postToNative } from './utils/webviewConfig';
 
 // Backend URL configuration
 // For Vercel: Backend is on the same domain, so we use relative path in production
@@ -79,7 +83,23 @@ axiosInstance.interceptors.response.use(
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
   const [language, setLanguage] = useState('en'); // en or gu
+
+  // Initialize WebView features
+  useEffect(() => {
+    // Initialize WebView configuration
+    const webViewInitialized = initWebView();
+    
+    if (!webViewInitialized) {
+      console.error('WebView initialization failed - domain not allowed');
+    }
+
+    // Notify native app that app is ready
+    if (isWebView()) {
+      postToNative('appReady', {});
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -103,6 +123,14 @@ function App() {
     }
   }, []);
 
+  // Handle splash screen finish
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    if (isWebView()) {
+      postToNative('hideSplashScreen', {});
+    }
+  };
+
   const handleLogin = (userData, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -115,18 +143,17 @@ function App() {
     setUser(null);
   };
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner"></div>
-      </div>
-    );
+  // Show splash screen while loading or if explicitly shown
+  if (showSplash || loading) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
+    <ErrorBoundary>
+      <ConnectivityCheck>
+        <div className="App">
+          <BrowserRouter>
+            <Routes>
           <Route
             path="/"
             element={
@@ -187,10 +214,12 @@ function App() {
               <ViharPathMargdarshika language={language} setLanguage={setLanguage} />
             }
           />
-        </Routes>
-      </BrowserRouter>
-      <Toaster position="top-right" richColors />
-    </div>
+            </Routes>
+          </BrowserRouter>
+          <Toaster position="top-right" richColors />
+        </div>
+      </ConnectivityCheck>
+    </ErrorBoundary>
   );
 }
 
