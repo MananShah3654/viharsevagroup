@@ -938,7 +938,7 @@ async def get_all_vihars(
     # Optimized: Use aggregation pipeline for better performance
     # This combines vihars and participations in a single query
     pipeline = [
-        {"$sort": {"created_at": -1}},
+        {"$sort": {"route_no": -1}},  # Sort by route number descending
         {"$skip": skip},
         {"$limit": limit},
         {
@@ -1290,10 +1290,12 @@ async def get_report_summary(period: str, user_id: str = None, current_user: dic
     total_sadhu_bhagvant = sum(safe_int(v.get("sadhu_bhagvant"), 0) for v in vihars)
     total_sadhviji_bhagvant = sum(safe_int(v.get("sadhviji_bhagvant"), 0) for v in vihars)
     total_mumukshu = sum(safe_int(v.get("mumukshu"), 0) for v in vihars)
+    # Total Thana = sum of sadhu_bhagvant + sadhviji_bhagvant for all vihars
+    total_thana = total_sadhu_bhagvant + total_sadhviji_bhagvant
     
     # Debug logging to help identify calculation issues
     logger.info(f"Report summary calculation - Period: {period}, Vihars: {total_vihars}, "
-                f"Sadhu: {total_sadhu_bhagvant}, Sadhviji: {total_sadhviji_bhagvant}, Mumukshu: {total_mumukshu}")
+                f"Sadhu: {total_sadhu_bhagvant}, Sadhviji: {total_sadhviji_bhagvant}, Mumukshu: {total_mumukshu}, Thana: {total_thana}")
     
     result = {
         "period": period,
@@ -1302,6 +1304,7 @@ async def get_report_summary(period: str, user_id: str = None, current_user: dic
         "total_sadhu_bhagvant": total_sadhu_bhagvant,
         "total_sadhviji_bhagvant": total_sadhviji_bhagvant,
         "total_mumukshu": total_mumukshu,
+        "total_thana": total_thana,
         "vihars": vihars,
         "user_info": user_info
     }
@@ -1360,6 +1363,11 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
         report_title = f"Vihar Report - {user_name} ({period.title()})"
     
     total_kms = sum(v.get("approx_kms", 0) for v in vihars)
+    # Calculate Total Thana (sum of sadhu_bhagvant + sadhviji_bhagvant)
+    total_thana = sum(
+        (v.get('sadhu_bhagvant', 0) or 0) + (v.get('sadhviji_bhagvant', 0) or 0)
+        for v in vihars
+    )
     
     # Create PDF with margins to prevent cutting
     buffer = BytesIO()
@@ -1450,8 +1458,10 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
             str(vihar.get('approx_kms', 0))
         ])
     
-    # Add total row - ensure all 6 columns are present
-    data.append(['', '', '', '', 'TOTAL KMs:', f"{total_kms:.2f}"])
+    # Add total row - both TOTAL THANA and TOTAL KMs in same row
+    # TOTAL THANA: in column 3 (Vihar Sevak), count in column 4 (Thana)
+    # TOTAL KMs: in columns 5-6
+    data.append(['', '', 'TOTAL THANA:', str(total_thana), 'TOTAL KMs:', f"{total_kms:.2f}"])
     
     # Create table - adjust column widths to fit page with margins
     # A4 width: 8.27 inch, with 0.5 inch margins on each side = 7.27 inch available
@@ -1472,8 +1482,12 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
         ('BOTTOMPADDING', (2, 1), (2, -2), 6),  # Extra padding for Vihar Sevak column
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#F5F1E8')),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        # Align TOTAL THANA label (column 3, last row) to left
+        ('ALIGN', (2, -1), (2, -1), 'LEFT'),
+        # Align TOTAL THANA value (column 4, last row) to center
+        ('ALIGN', (3, -1), (3, -1), 'CENTER'),
         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#FDFBF7')]),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#FDFBF7')]),  # Exclude last row (total row)
     ]))
     
     elements.append(table)
@@ -1481,7 +1495,7 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
     
     # Summary
     summary = Paragraph(
-        f"<b>Summary:</b> Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs",
+        f"<b>Summary:</b> Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs | Total Thana: {total_thana}",
         styles['Normal']
     )
     elements.append(summary)
@@ -1543,6 +1557,11 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
         report_title = f"Vihar Report - {user_name} ({period.title()})"
     
     total_kms = sum(v.get("approx_kms", 0) for v in vihars)
+    # Calculate Total Thana (sum of sadhu_bhagvant + sadhviji_bhagvant)
+    total_thana = sum(
+        (v.get('sadhu_bhagvant', 0) or 0) + (v.get('sadhviji_bhagvant', 0) or 0)
+        for v in vihars
+    )
     
     # Create Excel workbook
     wb = Workbook()
@@ -1664,7 +1683,7 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
         ws.cell(row=row, column=6, value=vihar.get('approx_kms', 0))
         row += 1
     
-    # Total row
+    # Add total row - both TOTAL THANA and TOTAL KMs in same row
     total_row = row
     # Clear all cells in total row first
     for col in range(1, 7):
@@ -1672,13 +1691,21 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
         ws.cell(row=total_row, column=col).fill = PatternFill(
             start_color="F5F1E8", end_color="F5F1E8", fill_type="solid"
         )
-    # Set TOTAL KMs label and value
-    total_label_cell = ws.cell(row=total_row, column=5, value="TOTAL KMs:")
-    total_label_cell.font = Font(bold=True)
-    total_label_cell.alignment = Alignment(horizontal="right", vertical="center")
-    total_value_cell = ws.cell(row=total_row, column=6, value=total_kms)
-    total_value_cell.font = Font(bold=True)
-    total_value_cell.alignment = Alignment(horizontal="right", vertical="center")
+    # Set TOTAL THANA label in column 3 (Vihar Sevak) and value in column 4 (Thana)
+    total_thana_label_cell = ws.cell(row=total_row, column=3, value="TOTAL THANA:")
+    total_thana_label_cell.font = Font(bold=True)
+    total_thana_label_cell.alignment = Alignment(horizontal="left", vertical="center")
+    total_thana_value_cell = ws.cell(row=total_row, column=4, value=total_thana)
+    total_thana_value_cell.font = Font(bold=True)
+    total_thana_value_cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Set TOTAL KMs label and value in columns 5-6
+    total_kms_label_cell = ws.cell(row=total_row, column=5, value="TOTAL KMs:")
+    total_kms_label_cell.font = Font(bold=True)
+    total_kms_label_cell.alignment = Alignment(horizontal="right", vertical="center")
+    total_kms_value_cell = ws.cell(row=total_row, column=6, value=total_kms)
+    total_kms_value_cell.font = Font(bold=True)
+    total_kms_value_cell.alignment = Alignment(horizontal="right", vertical="center")
     # Ensure row height is adequate
     ws.row_dimensions[total_row].height = 25
     
@@ -1686,7 +1713,7 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
     summary_row = total_row + 2
     ws.merge_cells(f'A{summary_row}:F{summary_row}')
     summary_cell = ws.cell(row=summary_row, column=1)
-    summary_cell.value = f"Summary: Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs"
+    summary_cell.value = f"Summary: Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs | Total Thana: {total_thana}"
     summary_cell.font = Font(bold=True)
     summary_cell.alignment = Alignment(horizontal="center")
     

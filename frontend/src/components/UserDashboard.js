@@ -25,6 +25,7 @@ const translations = {
     yearly: 'Yearly',
     totalVihars: 'Total Vihars',
     totalKms: 'Total KMs Covered',
+    totalThana: 'Total Thana',
     totalSadhuBhagvant: 'Total Sadhu Bhagvant',
     totalSadhvijiBhagvant: 'Total Sadhviji Bhagvant',
     totalMumukshu: 'Total Mumukshu',
@@ -71,6 +72,7 @@ const translations = {
     yearly: 'વાર્ષિક',
     totalVihars: 'કુલ વિહારો',
     totalKms: 'કુલ કિ.મી.',
+    totalThana: 'કુલ થાના',
     totalSadhuBhagvant: 'કુલ સાધુ ભગવંત',
     totalSadhvijiBhagvant: 'કુલ સાધ્વીજી ભગવંત',
     totalMumukshu: 'કુલ મુમુક્ષુ',
@@ -298,11 +300,12 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const getFilteredVihars = (viharList) => {
     let filtered = [...viharList];
     
-    // Sort by date (newest first)
+    // Sort by route number (descending order - highest first)
     filtered.sort((a, b) => {
-      const dateA = new Date(a.vihar_date + ' ' + a.vihar_time);
-      const dateB = new Date(b.vihar_date + ' ' + b.vihar_time);
-      return dateB - dateA;
+      const routeA = parseInt(a.route_no) || 0;
+      const routeB = parseInt(b.route_no) || 0;
+      // Descending order (highest route number first)
+      return routeB - routeA;
     });
     
     return filtered;
@@ -1183,6 +1186,10 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <p data-testid="total-kms-count">{reportData.total_kms.toFixed(2)}</p>
                   </div>
                   <div className="summary-card">
+                    <h4>{t.totalThana}</h4>
+                    <p data-testid="total-thana-count">{reportData.total_thana || 0}</p>
+                  </div>
+                  <div className="summary-card">
                     <h4>{t.totalSadhuBhagvant}</h4>
                     <p data-testid="total-sadhu-bhagvant-count">{reportData.total_sadhu_bhagvant || 0}</p>
                   </div>
@@ -1197,7 +1204,12 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                 </div>
 
                 <div className="vihar-grid">
-                  {reportData.vihars.map((vihar) => (
+                  {[...reportData.vihars].sort((a, b) => {
+                    // Sort by route number (descending order - highest first)
+                    const routeA = parseInt(a.route_no) || 0;
+                    const routeB = parseInt(b.route_no) || 0;
+                    return routeB - routeA; // Descending order (highest route number first)
+                  }).map((vihar) => (
                     <div key={vihar.id} className="vihar-card">
                       <h4>{vihar.sahebji_name}</h4>
                       <p><strong>{t.viharDate}:</strong> {vihar.vihar_date}</p>
