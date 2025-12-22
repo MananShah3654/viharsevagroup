@@ -40,6 +40,8 @@ const translations = {
     luggage: 'Luggage',
     dori: 'Dori',
     carRequired: 'Car Required',
+    carFilter: 'Viharsevak With Car',
+    userWithCar: 'User with Car',
     activa: 'Activa',
     fromUpashray: 'Vihar Starting Point',
     toUpashray: 'Vihar Ending Point',
@@ -157,6 +159,8 @@ const translations = {
     luggage: 'સામાન',
     dori: 'ડોરી',
     carRequired: 'કાર જરૂરી',
+    carFilter: 'ગાડી સાથે વિહારસેવક',
+    userWithCar: 'ગાડી સાથે યુઝર',
     activa: 'એકટીવા જરૂરી',
     fromUpashray: 'વિહાર ની શરૂઆત',
     toUpashray: 'વિહાર ની પૂર્ણાહુતિ',
@@ -270,6 +274,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [userCurrentPage, setUserCurrentPage] = useState(1); // Current page for users
   const [userItemsPerPage] = useState(10); // Items per page for users
   const [userNameFilter, setUserNameFilter] = useState(''); // Filter users by name
+  const [carFilter, setCarFilter] = useState(false); // Filter users by car
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmDialogData, setConfirmDialogData] = useState({
     message: '',
@@ -401,6 +406,11 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         const phone = (u.phone || '').toLowerCase();
         return name.includes(filterLower) || phone.includes(filterLower);
       });
+    }
+    
+    // Filter by car if car filter is enabled
+    if (carFilter) {
+      filtered = filtered.filter(u => u.car === true);
     }
     
     // Sort by name (alphabetically)
@@ -1287,6 +1297,22 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       return;
     }
     
+    // Mandatory fields validation
+    if (!userForm.blood_group || userForm.blood_group.trim() === '') {
+      toast.error('Please enter blood group');
+      return;
+    }
+    
+    if (!userForm.emergency_contact || userForm.emergency_contact.trim() === '') {
+      toast.error('Please enter emergency contact number');
+      return;
+    }
+    
+    if (!userForm.date_of_birth || userForm.date_of_birth.trim() === '') {
+      toast.error('Please enter date of birth');
+      return;
+    }
+    
     setLoading(true);
     try {
       await axiosInstance.post('/admin/users', {
@@ -1297,9 +1323,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         area: userForm.area.trim(),
         age: userForm.age ? parseInt(userForm.age) : null,
         address: userForm.address ? userForm.address.trim() : null,
-        blood_group: userForm.blood_group ? userForm.blood_group.trim() : null,
-        emergency_contact: userForm.emergency_contact || null,
-        date_of_birth: userForm.date_of_birth || null,
+        blood_group: userForm.blood_group.trim(),
+        emergency_contact: userForm.emergency_contact.trim(),
+        date_of_birth: userForm.date_of_birth.trim(),
       });
       toast.success(t.userCreated);
       setShowAddUser(false);
@@ -2398,7 +2424,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>{t.area}</label>
+                    <label>{t.area} <span style={{ color: 'red' }}>*</span></label>
                     <input
                       type="text"
                       value={userForm.area}
@@ -2426,17 +2452,18 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <label>Has Car</label>
                   </div>
                   <div className="form-group">
-                    <label>Blood Group</label>
+                    <label>Blood Group <span style={{ color: 'red' }}>*</span></label>
                     <input
                       type="text"
                       value={userForm.blood_group}
                       onChange={(e) => setUserForm({ ...userForm, blood_group: e.target.value })}
                       placeholder="A+, B+, O+, etc."
                       data-testid="user-blood-group-input"
+                      required
                     />
                   </div>
                   <div className="form-group">
-                    <label>Emergency Contact No</label>
+                    <label>Emergency Contact No <span style={{ color: 'red' }}>*</span></label>
                     <input
                       type="tel"
                       value={userForm.emergency_contact}
@@ -2444,15 +2471,17 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       placeholder="9429617099"
                       maxLength="10"
                       data-testid="user-emergency-contact-input"
+                      required
                     />
                   </div>
                   <div className="form-group">
-                    <label>Date of Birth</label>
+                    <label>Date of Birth <span style={{ color: 'red' }}>*</span></label>
                     <input
                       type="date"
                       value={userForm.date_of_birth}
                       onChange={(e) => setUserForm({ ...userForm, date_of_birth: e.target.value })}
                       data-testid="user-date-of-birth-input"
+                      required
                     />
                   </div>
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -2549,6 +2578,18 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     onFocus={(e) => e.target.style.borderColor = '#7FA588'}
                     onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
                   />
+                </div>
+                <div className="checkbox-group" style={{ marginTop: '15px' }}>
+                  <input
+                    type="checkbox"
+                    checked={carFilter}
+                    onChange={(e) => {
+                      setCarFilter(e.target.checked);
+                      setUserCurrentPage(1); // Reset to first page when filter changes
+                    }}
+                    data-testid="car-filter-checkbox"
+                  />
+                  <label>{t.carFilter}</label>
                 </div>
               </div>
             )}
