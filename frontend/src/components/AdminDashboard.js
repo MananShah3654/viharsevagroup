@@ -34,7 +34,9 @@ const translations = {
     viharTime: 'Vihar Time',
     sadhuBhagvant: 'Sadhu Bhagvant Thana',
     sadhvijiBhagvant: 'Sadhviji Bhagvant Thana',
+    mumukshu: 'Mumukshu Count',
     wheelchair: 'Wheelchair Required',
+    self: 'Self',
     luggage: 'Luggage',
     dori: 'Dori',
     carRequired: 'Car Required',
@@ -63,6 +65,9 @@ const translations = {
     yearly: 'Yearly',
     totalVihars: 'Total Vihars',
     totalKms: 'Total KMs Covered',
+    totalSadhuBhagvant: 'Total Sadhu Bhagvant',
+    totalSadhvijiBhagvant: 'Total Sadhviji Bhagvant',
+    totalMumukshu: 'Total Mumukshu',
     downloadPDF: 'Download PDF',
     downloadExcel: 'Download Excel',
     deleteVihar: 'Delete',
@@ -146,6 +151,7 @@ const translations = {
     viharTime: 'વિહાર સમય',
     sadhuBhagvant: 'સાધુ ભગવંત થાના',
     sadhvijiBhagvant: 'સાધ્વીજી ભગવંત થાના',
+    mumukshu: 'મુમુક્ષુ ગણતરી',
     wheelchair: 'વ્હીલચેર જરૂરી',
     luggage: 'સામાન',
     dori: 'ડોરી',
@@ -175,6 +181,9 @@ const translations = {
     yearly: 'વાર્ષિક',
     totalVihars: 'કુલ વિહારો',
     totalKms: 'કુલ કિ.મી. કવર કર્યા',
+    totalSadhuBhagvant: 'કુલ સાધુ ભગવંત',
+    totalSadhvijiBhagvant: 'કુલ સાધ્વીજી ભગવંત',
+    totalMumukshu: 'કુલ મુમુક્ષુ',
     downloadPDF: 'PDF ડાઉનલોડ',
     downloadExcel: 'Excel ડાઉનલોડ',
     deleteVihar: 'ડિલીટ',
@@ -274,7 +283,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     vihar_time: '',
     sadhu_bhagvant: '0',
     sadhviji_bhagvant: '0',
+    mumukshu: '0',
     wheelchair: '0',
+    self: false,
     luggage: false,
     dori: false,
     car_required: false,
@@ -316,6 +327,14 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       }
       // Also fetch users for the dropdown in reports tab only if needed
       if (users.length === 0 && !dataLoaded.users) {
+        fetchUsers();
+      }
+    } else if (activeTab === 'dashboard') {
+      // Load data for dashboard charts
+      if (!dataLoaded.vihars) {
+        fetchVihars();
+      }
+      if (!dataLoaded.users) {
         fetchUsers();
       }
     }
@@ -820,7 +839,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     const gujaratiHour = toGujaratiNumeral(displayHour);
     const gujaratiMin = toGujaratiNumeral(min.toString().padStart(2, '0'));
     
-    return `${period} ${gujaratiHour}.${gujaratiMin}વાગે`;
+    return `${period} ${gujaratiHour}.${gujaratiMin} વાગે`;
   };
 
   // Format vihar details to Gujarati WhatsApp message
@@ -831,11 +850,13 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     const viharTime = formatGujaratiTime(form.vihar_time || '');
     const dayOfWeek = viharDate ? getGujaratiDay(viharDate) : '';
     
-    // Sadhu and Sadhviji - only include if count > 0
+    // Sadhu, Sadhviji, and Mumukshu - only include if count > 0
     const sadhuCount = parseInt(form.sadhu_bhagvant) || 0;
     const sadhvijiCount = parseInt(form.sadhviji_bhagvant) || 0;
+    const mumukshuCount = parseInt(form.mumukshu) || 0;
     const sadhuBhagvant = sadhuCount > 0 ? toGujaratiNumeral(sadhuCount) : null;
     const sadhvijiBhagvant = sadhvijiCount > 0 ? toGujaratiNumeral(sadhvijiCount) : null;
+    const mumukshuDisplay = mumukshuCount > 0 ? toGujaratiNumeral(mumukshuCount) : null;
     
     // Wheelchair: only show if count > 0, show actual count
     const wheelchairCount = parseInt(form.wheelchair) || 0;
@@ -855,45 +876,50 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     
     // Build message lines
     let messageLines = [
-      'પ્રણામ🙏🏻 વિહાર સેવકો',
+      '*પ્રણામ🙏🏻 વિહાર સેવકો*',
       '',
       `*રૂટ- ${routeNo}*`,
       '*વિહાર ની વિગત: -*',
       `*સાહેબજી નું નામ -* ${sahebjiName}`,
       `*વિહાર તારીખ-* ${formattedDate},`,
       `*વાર-* ${dayOfWeek}`,
-      `*વિહાર સમય* ${viharTime}`
+      `*વિહાર સમય-* ${viharTime}`
     ];
     
     // Add Sadhu Bhagvant only if count > 0
     if (sadhuBhagvant) {
-      messageLines.push(`*સાધુ ભગવંત -*${sadhuBhagvant}`);
+      messageLines.push(`*સાધુ ભગવંત -* ${sadhuBhagvant}`);
     }
     
     // Add Sadhviji Bhagvant only if count > 0
     if (sadhvijiBhagvant) {
-      messageLines.push(`*સાધ્વીજી ભગવંત -*${sadhvijiBhagvant}`);
+      messageLines.push(`*સાધ્વીજી ભગવંત -* ${sadhvijiBhagvant}`);
+    }
+    
+    // Add Mumukshu only if count > 0
+    if (mumukshuDisplay) {
+      messageLines.push(`*મુમુક્ષુ -* ${mumukshuDisplay}`);
     }
     
     // Wheelchair - only show if count > 0
     if (wheelchairDisplay) {
-      messageLines.push(`*વિલ ચેર-* ${wheelchairDisplay}`);
+      messageLines.push(`*વ્હીલચેર-* ${wheelchairDisplay}`);
     }
     
     // Handle luggage, activa, car, dori with conditional logic
     // Check luggage first
     if (form.luggage) {
-      // If luggage is yes and (activa or car is selected)
-      if (form.activa || form.car_required) {
-        let vehicleText = '';
-        if (form.car_required && form.activa) {
-          vehicleText = 'ગાડી / એકટીવા';
-        } else if (form.car_required) {
-          vehicleText = 'ગાડી';
-        } else if (form.activa) {
-          vehicleText = 'એકટીવા';
-        }
-        messageLines.push(`*સામાન છે ${vehicleText} જોઈશે*`);
+      // If luggage is yes and activa is selected
+      if (form.activa && form.car_required) {
+        // Both activa and car - show both messages
+        messageLines.push('*સામાન છે એકટીવા જોઈશે*');
+        messageLines.push('*સામાન છે ગાડી જોઈશે*');
+      } else if (form.activa) {
+        // Only activa
+        messageLines.push('*સામાન છે એકટીવા જોઈશે*');
+      } else if (form.car_required) {
+        // Only car
+        messageLines.push('*સામાન છે ગાડી જોઈશે*');
       } else {
         // If luggage is yes but no activa/car
         messageLines.push('*સામાન -* હા');
@@ -915,12 +941,18 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       messageLines.push('*ડોરી -* હા');
     }
     
-    messageLines.push(`*ક્યાં ઉપાશ્રય -*${fromUpashray}`);
-    messageLines.push(`*ક્યાં ઉપાશ્રય-* ${toUpashray}`);
+    messageLines.push(`*ક્યાં ઉપાશ્રય -* ${fromUpashray}`);
+    messageLines.push(`*ક્યાં ઉપાશ્રય -* ${toUpashray}`);
     messageLines.push('');
     messageLines.push('*અનુકૂળતા હોય તે જણાવશો.*');
-    messageLines.push('');
     messageLines.push('*એપમાં ઇન કરી લેવું*');
+    
+    // Self wheelchair operation - only show if checked (at the end)
+    if (form.self) {
+      messageLines.push('');
+      messageLines.push('*નોંધ:*');
+      messageLines.push('*વ્હીલચેર આપણે ચલાવવાની છે*');
+    }
     
     return messageLines.join('\n');
   };
@@ -935,15 +967,30 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     });
   };
 
-  const resetViharForm = () => {
+  const fetchNextRouteNumber = async () => {
+    try {
+      const response = await axiosInstance.get('/vihars/next-route-number');
+      return response.data.next_route_number;
+    } catch (error) {
+      console.error('Error fetching next route number:', error);
+      // Fallback to empty string if API fails
+      return '';
+    }
+  };
+
+  const resetViharForm = async () => {
+    // Auto-fetch next route number when creating new vihar
+    const nextRouteNo = await fetchNextRouteNumber();
     setViharForm({
-      route_no: '',
+      route_no: nextRouteNo,
       sahebji_name: '',
       vihar_date: '',
       vihar_time: '',
       sadhu_bhagvant: '0',
       sadhviji_bhagvant: '0',
+      mumukshu: '0',
       wheelchair: '0',
+      self: false,
       luggage: false,
       dori: false,
       car_required: false,
@@ -961,6 +1008,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         ...viharForm,
         sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant) || 0,
         sadhviji_bhagvant: parseInt(viharForm.sadhviji_bhagvant) || 0,
+        mumukshu: parseInt(viharForm.mumukshu) || 0,
         wheelchair: parseInt(viharForm.wheelchair) || 0,
         approx_kms: parseFloat(viharForm.approx_kms) || 0,
       });
@@ -1002,7 +1050,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       vihar_time: vihar.vihar_time || '',
       sadhu_bhagvant: vihar.sadhu_bhagvant || '',
       sadhviji_bhagvant: vihar.sadhviji_bhagvant || '',
+      mumukshu: vihar.mumukshu || '',
       wheelchair: vihar.wheelchair !== undefined && vihar.wheelchair !== null ? (typeof vihar.wheelchair === 'boolean' ? (vihar.wheelchair ? '1' : '0') : String(vihar.wheelchair)) : '0',
+      self: vihar.self || false,
       luggage: vihar.luggage || false,
       dori: vihar.dori || false,
       car_required: vihar.car_required || false,
@@ -1024,6 +1074,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         ...viharForm,
         sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant) || 0,
         sadhviji_bhagvant: parseInt(viharForm.sadhviji_bhagvant) || 0,
+        mumukshu: parseInt(viharForm.mumukshu) || 0,
         wheelchair: parseInt(viharForm.wheelchair) || 0,
         approx_kms: parseFloat(viharForm.approx_kms) || 0,
       });
@@ -1509,10 +1560,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               marginBottom: '30px' 
             }}>
               {/* Vihars Chart */}
-              <div className="card" style={{ padding: '20px' }}>
+              <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.viharTrends}</h3>
+                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={(() => {
+                  <BarChart 
+                    data={(() => {
                     // Group vihars by month
                     const monthData = {};
                     vihars.forEach(vihar => {
@@ -1522,29 +1575,44 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                         monthData[monthKey] = (monthData[monthKey] || 0) + 1;
                       }
                     });
-                    return Object.entries(monthData)
+                    const chartData = Object.entries(monthData)
                       .sort()
                       .slice(-6)
                       .map(([month, count]) => ({
                         month: month.split('-')[1] + '/' + month.split('-')[0].slice(2),
                         vihars: count
                       }));
-                  })()}>
+                    // Return empty array with at least one entry if no data
+                    const finalData = chartData.length > 0 ? chartData : [{ month: 'No Data', vihars: 0 }];
+                    console.log('Vihar Trends Chart Data:', finalData);
+                    return finalData;
+                  })()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="vihars" fill="#7FA588" />
+                    <Bar 
+                      dataKey="vihars" 
+                      fill="#7FA588" 
+                      isAnimationActive={true}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* User Growth Chart */}
-              <div className="card" style={{ padding: '20px' }}>
+              <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.userGrowth}</h3>
+                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={(() => {
+                  <LineChart 
+                    data={(() => {
                     // Group users by month
                     const monthData = {};
                     users.forEach(user => {
@@ -1554,22 +1622,39 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                         monthData[monthKey] = (monthData[monthKey] || 0) + 1;
                       }
                     });
-                    return Object.entries(monthData)
+                    const chartData = Object.entries(monthData)
                       .sort()
                       .slice(-6)
                       .map(([month, count]) => ({
                         month: month.split('-')[1] + '/' + month.split('-')[0].slice(2),
                         users: count
                       }));
-                  })()}>
+                    // Return empty array with at least one entry if no data
+                    const finalData = chartData.length > 0 ? chartData : [{ month: 'No Data', users: 0 }];
+                    console.log('User Growth Chart Data:', finalData);
+                    return finalData;
+                  })()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="users" stroke="#667eea" strokeWidth={2} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="users" 
+                      stroke="#667eea" 
+                      strokeWidth={2}
+                      isAnimationActive={true}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                      dot={{ r: 5, fill: "#667eea" }}
+                      activeDot={{ r: 7 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
@@ -1580,8 +1665,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               gap: '20px' 
             }}>
               {/* Top Routes Pie Chart */}
-              <div className="card" style={{ padding: '20px' }}>
+              <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.topRoutes}</h3>
+                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -1592,10 +1678,14 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                             routeCounts[vihar.route_no] = (routeCounts[vihar.route_no] || 0) + 1;
                           }
                         });
-                        return Object.entries(routeCounts)
+                        const chartData = Object.entries(routeCounts)
                           .sort((a, b) => b[1] - a[1])
                           .slice(0, 5)
                           .map(([route, count]) => ({ name: `Route ${route}`, value: count }));
+                        // Return empty array with at least one entry if no data
+                        const finalData = chartData.length > 0 ? chartData : [{ name: 'No Data', value: 1 }];
+                        console.log('Top Routes Chart Data:', finalData);
+                        return finalData;
                       })()}
                       cx="50%"
                       cy="50%"
@@ -1604,6 +1694,11 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
+                      isAnimationActive={true}
+                      animationDuration={1000}
+                      animationEasing="ease-in-out"
+                      startAngle={90}
+                      endAngle={-270}
                     >
                       {(() => {
                         const COLORS = ['#7FA588', '#667eea', '#f5576c', '#4facfe', '#43e97b'];
@@ -1626,6 +1721,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Recent Vihars List */}
@@ -1701,7 +1797,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
               <h3>{t.allVihars}</h3>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" onClick={() => {
+                <button className="btn btn-primary" onClick={async () => {
+                  await resetViharForm();
                   setShowCreateVihar(true);
                 }} data-testid="create-vihar-btn">
                   {t.createVihar}
@@ -1768,6 +1865,15 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     />
                   </div>
                   <div className="form-group">
+                    <label>{t.mumukshu}</label>
+                    <input
+                      type="number"
+                      value={viharForm.mumukshu}
+                      onChange={(e) => setViharForm({ ...viharForm, mumukshu: e.target.value })}
+                      data-testid="mumukshu-count-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>{t.fromUpashray}</label>
                     <input
                       type="text"
@@ -1826,14 +1932,26 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                 <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
                   <div className="form-group" style={{ minWidth: '200px' }}>
                     <label>{t.wheelchair}</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={viharForm.wheelchair}
-                      onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.value })}
-                      data-testid="wheelchair-input"
-                      placeholder="0"
-                    />
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={viharForm.wheelchair}
+                        onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.value })}
+                        data-testid="wheelchair-input"
+                        placeholder="0"
+                        style={{ flex: 1 }}
+                      />
+                      <div className="checkbox-group" style={{ margin: 0, padding: '8px 12px', minHeight: 'auto' }}>
+                        <input
+                          type="checkbox"
+                          checked={viharForm.self}
+                          onChange={(e) => setViharForm({ ...viharForm, self: e.target.checked })}
+                          data-testid="self-checkbox"
+                        />
+                        <label style={{ margin: 0, fontSize: '0.9rem' }}>{t.self}</label>
+                      </div>
+                    </div>
                   </div>
                   <div className="checkbox-group">
                     <input
@@ -2041,6 +2159,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                     <p><strong>{t.approxKms}:</strong> {vihar.approx_kms} km</p>
                     <p><strong>{t.sadhuBhagvant}:</strong> {vihar.sadhu_bhagvant}</p>
                     <p><strong>{t.sadhvijiBhagvant}:</strong> {vihar.sadhviji_bhagvant || 0}</p>
+                    <p><strong>{t.mumukshu}:</strong> {vihar.mumukshu || 0}</p>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                       {vihar.wheelchair > 0 && <span className="status-badge status-in">♿ {t.wheelchair}</span>}
                       {vihar.luggage && <span className="status-badge status-out">🧳 {t.luggage}</span>}
@@ -2125,7 +2244,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           <td style={{ padding: '15px' }}>
                             <div>{vihar.sahebji_name || 'N/A'}</div>
                             <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
-                              Sadhu: {vihar.sadhu_bhagvant}, Sadhviji: {vihar.sadhviji_bhagvant || 0}
+                              Sadhu: {vihar.sadhu_bhagvant}, Sadhviji: {vihar.sadhviji_bhagvant || 0}, Mumukshu: {vihar.mumukshu || 0}
                             </div>
                           </td>
                           <td style={{ padding: '15px' }}>
@@ -2782,6 +2901,18 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                   <div className="summary-card">
                     <h4>{t.totalKms}</h4>
                     <p data-testid="total-kms-count">{reportData.total_kms.toFixed(2)}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalSadhuBhagvant}</h4>
+                    <p data-testid="total-sadhu-bhagvant-count">{reportData.total_sadhu_bhagvant || 0}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalSadhvijiBhagvant}</h4>
+                    <p data-testid="total-sadhviji-bhagvant-count">{reportData.total_sadhviji_bhagvant || 0}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalMumukshu}</h4>
+                    <p data-testid="total-mumukshu-count">{reportData.total_mumukshu || 0}</p>
                   </div>
                 </div>
 

@@ -84,11 +84,12 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
 
   return (
     <div className="auth-container">
-      <div className="language-toggle">
+      {/* Gujarati Language Toggle Button - Hidden/Commented Out */}
+      {/* <div className="language-toggle">
         <button onClick={() => setLanguage(language === 'en' ? 'gu' : 'en')} data-testid="language-toggle-btn">
           {language === 'en' ? '\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0' : 'English'}
         </button>
-      </div>
+      </div> */}
 
       <div className="auth-left">
         <div className="logo-hero">

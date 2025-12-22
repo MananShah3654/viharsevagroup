@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import AuthScreen from './components/AuthScreen';
-import RegisterScreen from './components/RegisterScreen';
-import AdminDashboard from './components/AdminDashboard';
-import UserDashboard from './components/UserDashboard';
-import LandingPage from './components/LandingPage';
-import ViharPathMargdarshika from './components/ViharPathMargdarshika';
 import { Toaster } from './components/ui/sonner';
 import SplashScreen from './components/SplashScreen';
 import ConnectivityCheck from './components/ConnectivityCheck';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initWebView, isWebView, postToNative } from './utils/webviewConfig';
+
+// Lazy load heavy components for code splitting
+const AuthScreen = lazy(() => import('./components/AuthScreen'));
+const RegisterScreen = lazy(() => import('./components/RegisterScreen'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const UserDashboard = lazy(() => import('./components/UserDashboard'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const ViharPathMargdarshika = lazy(() => import('./components/ViharPathMargdarshika'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="loading-screen">
+    <div className="spinner"></div>
+  </div>
+);
 
 // Backend URL configuration
 // For Vercel: Backend is on the same domain, so we use relative path in production
@@ -45,6 +54,10 @@ if (process.env.NODE_ENV === 'production') {
 
 export const axiosInstance = axios.create({
   baseURL: API,
+  timeout: 30000, // 30 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add auth token to requests
@@ -153,68 +166,70 @@ function App() {
       <ConnectivityCheck>
         <div className="App">
           <BrowserRouter>
-            <Routes>
-          <Route
-            path="/"
-            element={
-              <LandingPage language={language} setLanguage={setLanguage} />
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              user ? (
-                user.role === 'admin' ? (
-                  <Navigate to="/admin" replace />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              ) : (
-                <AuthScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
-              )
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              user ? (
-                user.role === 'admin' ? (
-                  <Navigate to="/admin" replace />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              ) : (
-                <RegisterScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
-              )
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              user && user.role === 'admin' ? (
-                <AdminDashboard user={user} onLogout={handleLogout} language={language} setLanguage={setLanguage} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              user ? (
-                <UserDashboard user={user} onLogout={handleLogout} language={language} setLanguage={setLanguage} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/vihar-path-margdarshika"
-            element={
-              <ViharPathMargdarshika language={language} setLanguage={setLanguage} />
-            }
-          />
-            </Routes>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <LandingPage language={language} setLanguage={setLanguage} />
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    user ? (
+                      user.role === 'admin' ? (
+                        <Navigate to="/admin" replace />
+                      ) : (
+                        <Navigate to="/dashboard" replace />
+                      )
+                    ) : (
+                      <AuthScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
+                    )
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    user ? (
+                      user.role === 'admin' ? (
+                        <Navigate to="/admin" replace />
+                      ) : (
+                        <Navigate to="/dashboard" replace />
+                      )
+                    ) : (
+                      <RegisterScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />
+                    )
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    user && user.role === 'admin' ? (
+                      <AdminDashboard user={user} onLogout={handleLogout} language={language} setLanguage={setLanguage} />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    user ? (
+                      <UserDashboard user={user} onLogout={handleLogout} language={language} setLanguage={setLanguage} />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/vihar-path-margdarshika"
+                  element={
+                    <ViharPathMargdarshika language={language} setLanguage={setLanguage} />
+                  }
+                />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
           <Toaster position="top-right" richColors />
         </div>

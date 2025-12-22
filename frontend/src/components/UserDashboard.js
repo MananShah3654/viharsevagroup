@@ -25,6 +25,9 @@ const translations = {
     yearly: 'Yearly',
     totalVihars: 'Total Vihars',
     totalKms: 'Total KMs Covered',
+    totalSadhuBhagvant: 'Total Sadhu Bhagvant',
+    totalSadhvijiBhagvant: 'Total Sadhviji Bhagvant',
+    totalMumukshu: 'Total Mumukshu',
     downloadPDF: 'Download PDF',
     downloadExcel: 'Download Excel',
     phone: 'Phone',
@@ -68,6 +71,9 @@ const translations = {
     yearly: 'વાર્ષિક',
     totalVihars: 'કુલ વિહારો',
     totalKms: 'કુલ કિ.મી.',
+    totalSadhuBhagvant: 'કુલ સાધુ ભગવંત',
+    totalSadhvijiBhagvant: 'કુલ સાધ્વીજી ભગવંત',
+    totalMumukshu: 'કુલ મુમુક્ષુ',
     downloadPDF: 'PDF ડાઉનલોડ',
     downloadExcel: 'Excel ડાઉનલોડ',
     phone: 'ફોન',
@@ -1175,6 +1181,18 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                   <div className="summary-card">
                     <h4>{t.totalKms}</h4>
                     <p data-testid="total-kms-count">{reportData.total_kms.toFixed(2)}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalSadhuBhagvant}</h4>
+                    <p data-testid="total-sadhu-bhagvant-count">{reportData.total_sadhu_bhagvant || 0}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalSadhvijiBhagvant}</h4>
+                    <p data-testid="total-sadhviji-bhagvant-count">{reportData.total_sadhviji_bhagvant || 0}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>{t.totalMumukshu}</h4>
+                    <p data-testid="total-mumukshu-count">{reportData.total_mumukshu || 0}</p>
                   </div>
                 </div>
 

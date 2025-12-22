@@ -148,7 +148,9 @@ class Vihar(BaseModel):
     vihar_time: str
     sadhu_bhagvant: int  # Sadhu Bhagvant count
     sadhviji_bhagvant: int = 0  # Sadhviji Bhagvant count
+    mumukshu: int = 0  # Mumukshu count
     wheelchair: int = 0  # Wheelchair count (0 = not required, >0 = count required)
+    self: bool = False  # Self wheelchair operation
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
@@ -218,14 +220,16 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
 
 class ViharCreate(BaseModel):
-    route_no: str
+    route_no: Optional[str] = None  # Optional - auto-generated if not provided, but can be manually set
     gujarati_date: str = ""  # Optional field (removed from form)
     sahebji_name: str = ""  # Sadhu Bhagvant name (optional field)
     vihar_date: str
     vihar_time: str
     sadhu_bhagvant: int  # Sadhu Bhagvant count
     sadhviji_bhagvant: int = 0  # Sadhviji Bhagvant count
+    mumukshu: int = 0  # Mumukshu count
     wheelchair: int = 0  # Wheelchair count (0 = not required, >0 = count required)
+    self: bool = False  # Self wheelchair operation
     luggage: bool = False
     dori: bool = False
     car_required: bool = False
@@ -360,9 +364,12 @@ async def update_user_profile(update_data: UserUpdate, current_user: dict = Depe
 # Admin Routes - User Management
 @api_router.get("/admin/users", dependencies=[Depends(get_admin_user)])
 async def get_all_users():
-    """Get all users (Admin only)"""
-    # Include both _id and id in query so we can ensure consistency
-    users_cursor = db.users.find({}, {"password_hash": 0})
+    """Get all users (Admin only) - Optimized with projection"""
+    # Optimized: Use projection to exclude password_hash and _id
+    users_cursor = db.users.find(
+        {}, 
+        {"_id": 0, "password_hash": 0}
+    ).sort("created_at", -1)  # Sort for consistency
     users = await users_cursor.to_list(1000)
     
     # Ensure all users have an 'id' field and remove _id from response
@@ -714,10 +721,54 @@ def parse_whatsapp_message(message: str) -> dict:
         raise
 
 # Vihar Routes
+@api_router.get("/vihars/next-route-number")
+async def get_next_route_number():
+    """Get the next auto-incremented route number"""
+    try:
+        # Get all vihars and find the highest route number
+        vihars = await db.vihars.find({}, {"_id": 0, "route_no": 1}).to_list(10000)
+        
+        max_route_no = 0
+        for vihar in vihars:
+            try:
+                # Try to parse route_no as integer
+                route_no = int(vihar.get("route_no", "0"))
+                if route_no > max_route_no:
+                    max_route_no = route_no
+            except (ValueError, TypeError):
+                # If route_no is not a number, skip it
+                continue
+        
+        # Next route number is max + 1, or 1 if no vihars exist
+        next_route_no = max_route_no + 1
+        return {"next_route_number": str(next_route_no)}
+    except Exception as e:
+        logger.error(f"Error getting next route number: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 @api_router.post("/vihars", dependencies=[Depends(get_admin_user)])
 async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = Depends(get_admin_user)):
-    """Create new vihar (Admin only)"""
+    """Create new vihar (Admin only) - route_no is auto-generated"""
     try:
+        # Auto-generate route_no if not provided
+        if not vihar_data.route_no:
+            # Get all vihars and find the highest route number
+            vihars = await db.vihars.find({}, {"_id": 0, "route_no": 1}).to_list(10000)
+            
+            max_route_no = 0
+            for vihar in vihars:
+                try:
+                    # Try to parse route_no as integer
+                    route_no = int(vihar.get("route_no", "0"))
+                    if route_no > max_route_no:
+                        max_route_no = route_no
+                except (ValueError, TypeError):
+                    # If route_no is not a number, skip it
+                    continue
+            
+            # Next route number is max + 1, or 1 if no vihars exist
+            vihar_data.route_no = str(max_route_no + 1)
+        
         # Get client IP
         client_ip = request.client.host if request.client else None
         # Try to get real IP from headers (for proxies)
@@ -747,7 +798,7 @@ async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = 
             await cache.delete(cache_key_reports("monthly"))
             await cache.delete(cache_key_reports("yearly"))
         
-        logger.info(f"Vihar created successfully: {vihar.id}")
+        logger.info(f"Vihar created successfully: {vihar.id} with route_no: {vihar.route_no}")
         return vihar_dict
     except Exception as e:
         logger.error(f"Error creating vihar: {str(e)}")
@@ -761,6 +812,10 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request,
         existing_vihar = await db.vihars.find_one({"id": vihar_id})
         if not existing_vihar:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
+        
+        # If route_no is not provided in update, preserve the original
+        if not vihar_data.route_no:
+            vihar_data.route_no = existing_vihar.get("route_no")
         
         # Get client IP
         client_ip = request.client.host if request.client else None
@@ -872,7 +927,7 @@ async def get_all_vihars(
     limit: int = 100,
     request: Request = None
 ):
-    """Get all vihars - users see limited details (Optimized with pagination and caching)"""
+    """Get all vihars - users see limited details (Optimized with pagination, caching, and aggregation)"""
     # Check cache first
     cache_key = f"vihars:user:{current_user['id']}:skip:{skip}:limit:{limit}"
     if cache:
@@ -880,26 +935,43 @@ async def get_all_vihars(
         if cached_result is not None:
             return cached_result
     
-    # Optimized: Fetch vihars with pagination
-    vihars = await db.vihars.find(
-        {}, 
-        {"_id": 0}
-    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    # Optimized: Use aggregation pipeline for better performance
+    # This combines vihars and participations in a single query
+    pipeline = [
+        {"$sort": {"created_at": -1}},
+        {"$skip": skip},
+        {"$limit": limit},
+        {
+            "$lookup": {
+                "from": "participations",
+                "let": {"vihar_id": "$id"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$and": [
+                                    {"$eq": ["$vihar_id", "$$vihar_id"]},
+                                    {"$eq": ["$user_id", current_user["id"]]}
+                                ]
+                            }
+                        }
+                    },
+                    {"$project": {"_id": 0, "status": 1}}
+                ],
+                "as": "user_participation"
+            }
+        },
+        {
+            "$addFields": {
+                "user_status": {
+                    "$ifNull": [{"$arrayElemAt": ["$user_participation.status", 0]}, None]
+                }
+            }
+        },
+        {"$project": {"_id": 0, "user_participation": 0}}
+    ]
     
-    # Optimized: Fetch all participations in one query (fixes N+1 problem)
-    vihar_ids = [v["id"] for v in vihars]
-    participations_cursor = db.participations.find(
-        {"vihar_id": {"$in": vihar_ids}, "user_id": current_user["id"]},
-        {"_id": 0, "vihar_id": 1, "status": 1}
-    )
-    participations = await participations_cursor.to_list(1000)
-    
-    # Create participation map for O(1) lookup
-    participation_map = {p["vihar_id"]: p["status"] for p in participations}
-    
-    # Add participation status to vihars
-    for vihar in vihars:
-        vihar["user_status"] = participation_map.get(vihar["id"])
+    vihars = await db.vihars.aggregate(pipeline).to_list(limit)
     
     # Cache result for 60 seconds
     if cache:
@@ -1204,12 +1276,32 @@ async def get_report_summary(period: str, user_id: str = None, current_user: dic
         user_info = current_user
     
     total_vihars = len(vihars)
-    total_kms = sum(v.get("approx_kms", 0) for v in vihars)
+    total_kms = sum(float(v.get("approx_kms", 0) or 0) for v in vihars)
+    
+    # Helper function to safely convert to int
+    def safe_int(value, default=0):
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+    
+    total_sadhu_bhagvant = sum(safe_int(v.get("sadhu_bhagvant"), 0) for v in vihars)
+    total_sadhviji_bhagvant = sum(safe_int(v.get("sadhviji_bhagvant"), 0) for v in vihars)
+    total_mumukshu = sum(safe_int(v.get("mumukshu"), 0) for v in vihars)
+    
+    # Debug logging to help identify calculation issues
+    logger.info(f"Report summary calculation - Period: {period}, Vihars: {total_vihars}, "
+                f"Sadhu: {total_sadhu_bhagvant}, Sadhviji: {total_sadhviji_bhagvant}, Mumukshu: {total_mumukshu}")
     
     result = {
         "period": period,
         "total_vihars": total_vihars,
         "total_kms": total_kms,
+        "total_sadhu_bhagvant": total_sadhu_bhagvant,
+        "total_sadhviji_bhagvant": total_sadhviji_bhagvant,
+        "total_mumukshu": total_mumukshu,
         "vihars": vihars,
         "user_info": user_info
     }

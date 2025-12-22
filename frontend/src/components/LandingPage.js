@@ -8,13 +8,16 @@ const translations = {
     subtitle: 'Serving Jain Shraman Shramani Bhagvant with Safety and Devotion',
     convenor1Title: 'Convenor - All India Vihar Seva Group',
     convenor1Name: 'Rupeshbhai Shaileshbhai Vora',
-    convenor1Phone: '+91 8905093981',
+    convenor1Phone: '+91 89050 93981',
     convenor2Title: 'Convenor - Gujarat Vihar Seva Group',
     convenor2Name: 'Shreyanshbhai Dilipbhai Ramani',
     convenor2Phone: '+91 89050 93881',
     convenor3Title: 'Convenor - Naranpura Vihar Seva Group',
     convenor3Name: 'Vardhaman Atulbhai Shah',
-    convenor3Phone: '+91 8690703224',
+    convenor3Phone: '+91 86907 03224',
+    convenor4Title: 'Convenor - Naranpura Vihar Seva Group',
+    convenor4Name: 'Hardikbhai Shah',
+    convenor4Phone: '+91 94291 31760',
     enterApp: 'Enter Application',
     login: 'Login',
     register: 'Register',
@@ -26,13 +29,16 @@ const translations = {
     subtitle: 'જૈન શ્રમણ શ્રમણી ભગવંતોની સુરક્ષા અને ભક્તિ સાથે સેવા',
     convenor1Title: 'કન્વીનર - ઓલ ઇન્ડિયા વિહાર સેવા ગ્રુપ',
     convenor1Name: 'રૂપેશભાઈ શૈલેષભાઈ વોરા',
-    convenor1Phone: '+91 8905093981',
+    convenor1Phone: '+91 89050 93981',
     convenor2Title: 'કન્વીનર - ગુજરાત વિહાર સેવા ગ્રુપ', 
     convenor2Name: 'શ્રેયાંસભાઈ દિલીપભાઈ રામાણી',
     convenor2Phone: '+91 89050 93881',
     convenor3Title: 'કન્વીનર - નારણપુરા વિહાર સેવા ગ્રુપ',
     convenor3Name: 'વર્ધમાન અતુલભાઇ શાહ',
-    convenor3Phone: '+91 8690703224',
+    convenor3Phone: '+91 86907 03224',
+    convenor4Title: 'કન્વીનર - નારણપુરા વિહાર સેવા ગ્રુપ',
+    convenor4Name: 'હાર્દિકભાઈ શાહ',
+    convenor4Phone: '+91 94291 31760',
     enterApp: 'એપ્લિકેશનમાં પ્રવેશ કરો',
     login: 'લોગિન',
     register: 'રજીસ્ટર',
@@ -63,12 +69,13 @@ const LandingPage = ({ language, setLanguage }) => {
             >
               {t.register}
             </button>
-            <button 
+            {/* Gujarati Language Toggle Button - Hidden/Commented Out */}
+            {/* <button 
               className="landing-language-toggle-btn"
               onClick={() => setLanguage(language === 'en' ? 'gu' : 'en')}
             >
               {language === 'en' ? 'ગુજરાતી' : 'English'}
-            </button>
+            </button> */}
           </div>
         </div>
       </header>
@@ -121,8 +128,8 @@ const LandingPage = ({ language, setLanguage }) => {
             </div>
           </div>
 
-          {/* Middle Convenor */}
-          <div className="convenor-center">
+          {/* Middle Two Convenors */}
+          <div className="convenors-grid">
             <div className="convenor-card">
               <div className="convenor-image-wrapper">
                 <img src="/images/Vardhaman.jpeg" alt={t.convenor3Name} className="convenor-image" />
@@ -131,6 +138,17 @@ const LandingPage = ({ language, setLanguage }) => {
                 <div className="convenor-title">{t.convenor3Title}</div>
                 <div className="convenor-name">{t.convenor3Name}</div>
                 <div className="convenor-phone">{t.convenor3Phone}</div>
+              </div>
+            </div>
+
+            <div className="convenor-card">
+              <div className="convenor-image-wrapper">
+                <img src="/images/Hardikbhai.jpeg" alt={t.convenor4Name} className="convenor-image" />
+              </div>
+              <div className="convenor-info">
+                <div className="convenor-title">{t.convenor4Title}</div>
+                <div className="convenor-name">{t.convenor4Name}</div>
+                <div className="convenor-phone">{t.convenor4Phone}</div>
               </div>
             </div>
           </div>
