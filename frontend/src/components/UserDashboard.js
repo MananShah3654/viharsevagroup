@@ -151,6 +151,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [photoPreview, setPhotoPreview] = useState(user.photo || null);
   const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
   const [pwLoading, setPwLoading] = useState(false);
+  const [showChangePw, setShowChangePw] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [showTop10, setShowTop10] = useState(true); // Show top 10 entries
   const [currentPage, setCurrentPage] = useState(1);
@@ -394,6 +395,7 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       });
       toast.success(t.passwordChanged);
       setPwForm({ old_password: '', new_password: '', confirm_password: '' });
+      setShowChangePw(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to change password');
     } finally {
@@ -455,12 +457,47 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
               <p><strong>{user.name || user.phone}</strong></p>
               <p>{user.area || 'User'}</p>
             </div>
+            <button className="btn-small" onClick={() => setShowChangePw(true)} style={{ background: '#7FA588', color: 'white' }}>
+              {t.changePassword}
+            </button>
             <button className="btn-small btn-logout" onClick={onLogout} data-testid="logout-btn">
               {t.logout}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePw && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowChangePw(false); setPwForm({ old_password: '', new_password: '', confirm_password: '' }); } }}>
+          <div className="modal-content" style={{ maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px' }}>{t.changePassword}</h2>
+              <button onClick={() => { setShowChangePw(false); setPwForm({ old_password: '', new_password: '', confirm_password: '' }); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' }}>✕</button>
+            </div>
+            <div className="form-group">
+              <label>{t.currentPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={pwForm.old_password} onChange={(e) => setPwForm({ ...pwForm, old_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div className="form-group">
+              <label>{t.newPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={pwForm.new_password} onChange={(e) => setPwForm({ ...pwForm, new_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div className="form-group">
+              <label>{t.confirmPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={pwForm.confirm_password} onChange={(e) => setPwForm({ ...pwForm, confirm_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="btn btn-primary" onClick={handleChangePassword} disabled={pwLoading} style={{ flex: 1 }}>
+                {pwLoading ? 'Changing...' : t.changePassword}
+              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowChangePw(false); setPwForm({ old_password: '', new_password: '', confirm_password: '' }); }} style={{ flex: 1 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-content">
         <div className="tabs">
@@ -1567,46 +1604,6 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                   {loading ? 'Updating...' : t.updateProfile}
                 </button>
 
-                {/* Change Password */}
-                <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #eee' }}>
-                  <h4 style={{ marginBottom: '16px', color: '#3A3A3A' }}>{t.changePassword}</h4>
-                  <div className="form-group">
-                    <label>{t.currentPassword}</label>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength="4"
-                      value={pwForm.old_password}
-                      onChange={(e) => setPwForm({ ...pwForm, old_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="••••"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.newPassword}</label>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength="4"
-                      value={pwForm.new_password}
-                      onChange={(e) => setPwForm({ ...pwForm, new_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="••••"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.confirmPassword}</label>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength="4"
-                      value={pwForm.confirm_password}
-                      onChange={(e) => setPwForm({ ...pwForm, confirm_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="••••"
-                    />
-                  </div>
-                  <button className="btn btn-primary" onClick={handleChangePassword} disabled={pwLoading}>
-                    {pwLoading ? 'Changing...' : t.changePassword}
-                  </button>
-                </div>
               </div>
 
               {/* Right Side - Photo Preview */}
