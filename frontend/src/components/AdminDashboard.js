@@ -359,7 +359,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     setLoading(true);
     try {
       // Add pagination parameters for faster loading
-      const response = await axiosInstance.get('/vihars?skip=0&limit=100');
+      const response = await axiosInstance.get('/vihars?skip=0&limit=1000');
       setVihars(response.data);
       setDataLoaded(prev => ({ ...prev, vihars: true }));
     } catch (error) {

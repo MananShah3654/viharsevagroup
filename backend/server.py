@@ -935,7 +935,7 @@ async def create_vihar_from_whatsapp(whatsapp_data: WhatsAppMessage, admin: dict
 async def get_all_vihars(
     current_user: dict = Depends(get_current_user),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     request: Request = None
 ):
     """Get all vihars - users see limited details (Optimized with pagination, caching, and aggregation)"""
