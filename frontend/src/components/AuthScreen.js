@@ -82,6 +82,14 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
     handleLogin(e);
   };
 
+  // Scroll focused input into view after Android keyboard finishes opening
+  const scrollIntoViewOnFocus = (e) => {
+    const el = e.target;
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+  };
+
   return (
     <div className="auth-container">
       {/* Gujarati Language Toggle Button - Hidden/Commented Out */}
@@ -128,6 +136,7 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
                 inputMode="numeric"
                 pattern="[0-9]{10}"
                 maxLength="10"
+                onFocus={scrollIntoViewOnFocus}
               />
             </div>
             <div className="form-group">
@@ -139,6 +148,7 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
                 data-testid="password-input"
                 required
                 autoComplete="current-password"
+                onFocus={scrollIntoViewOnFocus}
               />
             </div>
             <button 

@@ -249,45 +249,65 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Mobile-specific auth improvements */
+/* Mobile auth — compact header + keyboard-friendly form */
 @media (max-width: 768px) {
   .auth-container {
+    /* dvh adjusts when Android keyboard resizes the viewport */
     min-height: 100vh;
-    min-height: -webkit-fill-available;
-    padding-top: 50px; /* Space for language toggle */
-  }
-
-  .auth-left {
-    padding: var(--space-lg) var(--space-md) var(--space-md);
-    min-height: auto;
-  }
-
-  .auth-right {
-    padding: var(--space-md) var(--space-md) var(--space-xl);
-    min-height: auto;
-    align-items: flex-start;
+    min-height: 100dvh;
+    overflow-y: auto;
     padding-top: 0;
+    flex-direction: column;
+  }
+
+  /* Compact banner row: logo + title side-by-side, ~70px tall */
+  .auth-left {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    min-height: auto;
+    background: rgba(127, 165, 136, 0.08);
+    border-bottom: 1px solid rgba(127, 165, 136, 0.18);
   }
 
   .logo-hero {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
     max-width: 100%;
-    padding: 0 var(--space-sm);
+    padding: 0;
   }
 
   .logo-hero img {
-    width: 140px;
-    height: 140px;
-    margin-bottom: var(--space-md);
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0;
+    flex-shrink: 0;
   }
 
   .logo-hero h1 {
-    font-size: 1.75rem;
-    margin-bottom: var(--space-sm);
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    white-space: nowrap;
   }
 
+  /* Hide subtitle — saves ~60px on mobile */
   .logo-hero p {
-    font-size: 0.95rem;
-    padding: 0 var(--space-sm);
+    display: none;
+  }
+
+  /* Form section fills remaining screen */
+  .auth-right {
+    flex: 1;
+    align-items: flex-start;
+    padding: 20px 16px;
+    /* Large bottom padding so the login button stays above the keyboard */
+    padding-bottom: max(120px, env(safe-area-inset-bottom, 20px));
+    min-height: auto;
   }
 }
 
@@ -1385,16 +1405,7 @@ html, body {
     min-height: -webkit-fill-available;
   }
 
-  /* Auth screen mobile optimizations */
-  .auth-left {
-    padding-top: var(--space-md);
-    padding-bottom: var(--space-md);
-  }
-
-  .auth-right {
-    padding-top: 0;
-    padding-bottom: var(--space-xl);
-  }
+  /* Auth screen — handled by the compact-header block above */
 
   /* Dashboard Header Mobile */
   .dashboard-header .header-content {
