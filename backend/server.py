@@ -1786,7 +1786,7 @@ async def health_check():
 @app.get("/ping")
 async def ping():
     """Simple ping endpoint"""
-    return {"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat(), "build": "change-pwd-v3"}
 
 # Vihar Path Margdarshika - Route 1 PDF Report (Public endpoint - no auth required)
 class Route1Data(BaseModel):
