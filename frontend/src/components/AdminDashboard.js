@@ -1015,6 +1015,10 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleCreateVihar = async () => {
+    if (!viharForm.from_upashray.trim()) { toast.error(language === 'gu' ? 'શરૂ થવાનું સ્થળ જરૂરી છે' : 'Starting point is required'); return; }
+    if (!viharForm.to_upashray.trim())   { toast.error(language === 'gu' ? 'અંત સ્થળ જરૂરી છે' : 'Ending point is required'); return; }
+    if (!viharForm.vihar_date)           { toast.error(language === 'gu' ? 'વિહાર તારીખ જરૂરી છે' : 'Vihar date is required'); return; }
+    if (!viharForm.vihar_time)           { toast.error(language === 'gu' ? 'વિહાર સમય જરૂરી છે' : 'Vihar time is required'); return; }
     setLoading(true);
     try {
       const response = await axiosInstance.post('/vihars', {
@@ -1867,21 +1871,25 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                         />
                       </div>
                       <div className="form-group">
-                        <label>{t.viharDate}</label>
+                        <label>{t.viharDate} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
                           type="date"
                           value={viharForm.vihar_date}
                           onChange={(e) => setViharForm({ ...viharForm, vihar_date: e.target.value })}
                           data-testid="vihar-date-input"
+                          required
+                          style={!viharForm.vihar_date ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
                       <div className="form-group">
-                        <label>{t.viharTime}</label>
+                        <label>{t.viharTime} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
                           type="time"
                           value={viharForm.vihar_time}
                           onChange={(e) => setViharForm({ ...viharForm, vihar_time: e.target.value })}
                           data-testid="vihar-time-input"
+                          required
+                          style={!viharForm.vihar_time ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
                       <div className="form-group">
@@ -1912,21 +1920,25 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                         />
                       </div>
                       <div className="form-group">
-                        <label>{t.fromUpashray}</label>
+                        <label>{t.fromUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
                           type="text"
                           value={viharForm.from_upashray}
                           onChange={(e) => setViharForm({ ...viharForm, from_upashray: e.target.value })}
                           data-testid="from-upashray-input"
+                          required
+                          style={!viharForm.from_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
                       <div className="form-group">
-                        <label>{t.toUpashray}</label>
+                        <label>{t.toUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
                           type="text"
                           value={viharForm.to_upashray}
                           onChange={(e) => setViharForm({ ...viharForm, to_upashray: e.target.value })}
                           data-testid="to-upashray-input"
+                          required
+                          style={!viharForm.to_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
                       <div className="form-group">
