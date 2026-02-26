@@ -116,9 +116,6 @@ const AuthScreen = ({ onLogin, language, setLanguage }) => {
       <div className="auth-right">
         <div className="auth-card">
           <h2>{t.login}</h2>
-          <p style={{ textAlign: 'center', color: '#757575', marginBottom: '24px', fontSize: '0.95rem' }}>
-            {t.enterCredentials}
-          </p>
           <form onSubmit={handleLogin} noValidate>
             <div className="form-group">
               <label>{t.phoneNumber}</label>

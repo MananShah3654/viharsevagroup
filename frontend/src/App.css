@@ -1774,3 +1774,71 @@ html, body {
     justify-content: center;
   }
 }
+
+/* ============================================================
+   MOBILE AUTH — COMPACT HEADER (must be last to override all
+   earlier 992px / 768px / 480px blocks)
+   ============================================================ */
+@media (max-width: 767px) {
+  .auth-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    padding-top: 0 !important;
+    flex-direction: column !important;
+  }
+
+  /* Compact single-row banner: small logo + title */
+  .auth-left {
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 10px 20px !important;
+    gap: 12px !important;
+    min-height: auto !important;
+    background: rgba(127, 165, 136, 0.08) !important;
+    border-bottom: 1px solid rgba(127, 165, 136, 0.18) !important;
+    width: 100% !important;
+  }
+
+  .logo-hero {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: left !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .logo-hero img {
+    width: 44px !important;
+    height: 44px !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .logo-hero h1 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .logo-hero p {
+    display: none !important;
+  }
+
+  /* Form section fills all remaining space */
+  .auth-right {
+    flex: 1 !important;
+    align-items: flex-start !important;
+    padding: 16px !important;
+    padding-bottom: max(130px, env(safe-area-inset-bottom, 20px)) !important;
+    min-height: auto !important;
+  }
+
+  .auth-card {
+    padding: 20px 16px !important;
+    max-width: 100% !important;
+  }
+}
