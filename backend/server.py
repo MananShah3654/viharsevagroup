@@ -743,27 +743,21 @@ def parse_whatsapp_message(message: str) -> dict:
         raise
 
 # Vihar Routes
+async def _get_max_route_no() -> int:
+    """Efficiently find the highest numeric route_no using aggregation (single DB round-trip)."""
+    pipeline = [
+        {"$project": {"route_no_int": {"$convert": {"input": "$route_no", "to": "int", "onError": 0, "onNull": 0}}}},
+        {"$group": {"_id": None, "max": {"$max": "$route_no_int"}}},
+    ]
+    result = await db.vihars.aggregate(pipeline).to_list(1)
+    return result[0]["max"] if result else 0
+
 @api_router.get("/vihars/next-route-number")
 async def get_next_route_number():
     """Get the next auto-incremented route number"""
     try:
-        # Get all vihars and find the highest route number
-        vihars = await db.vihars.find({}, {"_id": 0, "route_no": 1}).to_list(10000)
-        
-        max_route_no = 0
-        for vihar in vihars:
-            try:
-                # Try to parse route_no as integer
-                route_no = int(vihar.get("route_no", "0"))
-                if route_no > max_route_no:
-                    max_route_no = route_no
-            except (ValueError, TypeError):
-                # If route_no is not a number, skip it
-                continue
-        
-        # Next route number is max + 1, or 1 if no vihars exist
-        next_route_no = max_route_no + 1
-        return {"next_route_number": str(next_route_no)}
+        max_route_no = await _get_max_route_no()
+        return {"next_route_number": str(max_route_no + 1)}
     except Exception as e:
         logger.error(f"Error getting next route number: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -774,21 +768,7 @@ async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = 
     try:
         # Auto-generate route_no if not provided
         if not vihar_data.route_no:
-            # Get all vihars and find the highest route number
-            vihars = await db.vihars.find({}, {"_id": 0, "route_no": 1}).to_list(10000)
-            
-            max_route_no = 0
-            for vihar in vihars:
-                try:
-                    # Try to parse route_no as integer
-                    route_no = int(vihar.get("route_no", "0"))
-                    if route_no > max_route_no:
-                        max_route_no = route_no
-                except (ValueError, TypeError):
-                    # If route_no is not a number, skip it
-                    continue
-            
-            # Next route number is max + 1, or 1 if no vihars exist
+            max_route_no = await _get_max_route_no()
             vihar_data.route_no = str(max_route_no + 1)
         
         # Get client IP
