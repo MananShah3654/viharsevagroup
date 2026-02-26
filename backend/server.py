@@ -812,7 +812,8 @@ async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = 
         )
         vihar_dict = vihar.model_dump()
         await db.vihars.insert_one(vihar_dict)
-        
+        vihar_dict.pop('_id', None)  # Remove ObjectId added by insert_one (not JSON serializable)
+
         # Invalidate cache
         if cache:
             await cache.delete_prefix("vihars:user:")

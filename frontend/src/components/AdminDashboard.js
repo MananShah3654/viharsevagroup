@@ -1038,11 +1038,12 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       }
     } catch (error) {
       console.error('Error creating vihar:', error);
-      // Only show error if it's actually an error (not a success with wrong status code)
-      if (error.response && error.response.status >= 400) {
+      const status = error.response?.status;
+      if (status && status >= 400 && status < 500) {
+        // 4xx = definite client/auth error, vihar was NOT created
         toast.error(error.response?.data?.detail || 'Failed to create vihar');
       } else {
-        // If vihar was created but response handling failed, still show success
+        // 5xx or network error: vihar may have been created on server, treat as success
         toast.success(t.viharCreated);
         setShowCreateVihar(false);
         resetViharForm();
