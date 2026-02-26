@@ -83,6 +83,13 @@ const translations = {
     userCreated: 'User created successfully!',
     roleUpdated: 'Role updated successfully!',
     logout: 'Logout',
+    changePassword: 'Change Password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password (4 digits)',
+    confirmPassword: 'Confirm New Password',
+    passwordChanged: 'Password changed successfully!',
+    passwordMismatch: 'New passwords do not match',
+    passwordInvalid: 'Password must be exactly 4 digits',
     previewParticipants: 'Preview Participants',
     assignUsers: 'Assign Users',
     participants: 'Participants',
@@ -202,6 +209,13 @@ const translations = {
     userCreated: 'યુઝર સફળતાપૂર્વક બનાવ્યો!',
     roleUpdated: 'ભૂમિકા અપડેટ થઈ!',
     logout: 'લોગઆઉટ',
+    changePassword: 'પાસવર્ડ બદલો',
+    currentPassword: 'હાલનો પાસવર્ડ',
+    newPassword: 'નવો પાસવર્ડ (4 અંક)',
+    confirmPassword: 'નવો પાસવર્ડ ફરીથી',
+    passwordChanged: 'પાસવર્ડ સફળતાપૂર્વક બદલ્યો!',
+    passwordMismatch: 'નવા પાસવર્ડ મેળ ખાતા નથી',
+    passwordInvalid: 'પાસવર્ડ બરાબર 4 અંક હોવો જોઈએ',
     previewParticipants: 'સહભાગીઓનું પૂર્વાવલોકન',
     assignUsers: 'યુઝર્સ સોંપો',
     participants: 'સહભાગીઓ',
@@ -253,6 +267,9 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateVihar, setShowCreateVihar] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [adminPwForm, setAdminPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [adminPwLoading, setAdminPwLoading] = useState(false);
   const [vihars, setVihars] = useState([]);
   const [users, setUsers] = useState([]);
   const [reportPeriod, setReportPeriod] = useState('weekly');
@@ -354,6 +371,32 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       fetchReports();
     }
   }, [reportPeriod, selectedUserId]);
+
+  const handleAdminChangePassword = async () => {
+    if (!adminPwForm.old_password || !adminPwForm.new_password || !adminPwForm.confirm_password) {
+      toast.error('Please fill all password fields'); return;
+    }
+    if (!/^\d{4}$/.test(adminPwForm.new_password)) {
+      toast.error(t.passwordInvalid); return;
+    }
+    if (adminPwForm.new_password !== adminPwForm.confirm_password) {
+      toast.error(t.passwordMismatch); return;
+    }
+    setAdminPwLoading(true);
+    try {
+      await axiosInstance.post('/auth/change-password', {
+        old_password: adminPwForm.old_password,
+        new_password: adminPwForm.new_password,
+      });
+      toast.success(t.passwordChanged);
+      setAdminPwForm({ old_password: '', new_password: '', confirm_password: '' });
+      setShowChangePw(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setAdminPwLoading(false);
+    }
+  };
 
   const fetchVihars = async () => {
     setLoading(true);
@@ -1432,12 +1475,47 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               <p><strong>{user.name || user.phone}</strong></p>
               <p>{user.role}</p>
             </div>
+            <button className="btn-small" onClick={() => setShowChangePw(true)} style={{ background: '#7FA588', color: 'white' }}>
+              {t.changePassword}
+            </button>
             <button className="btn-small btn-logout" onClick={onLogout} data-testid="logout-btn">
               {t.logout}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePw && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowChangePw(false); setAdminPwForm({ old_password: '', new_password: '', confirm_password: '' }); } }}>
+          <div className="modal-content" style={{ maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px' }}>{t.changePassword}</h2>
+              <button onClick={() => { setShowChangePw(false); setAdminPwForm({ old_password: '', new_password: '', confirm_password: '' }); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' }}>✕</button>
+            </div>
+            <div className="form-group">
+              <label>{t.currentPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={adminPwForm.old_password} onChange={(e) => setAdminPwForm({ ...adminPwForm, old_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div className="form-group">
+              <label>{t.newPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={adminPwForm.new_password} onChange={(e) => setAdminPwForm({ ...adminPwForm, new_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div className="form-group">
+              <label>{t.confirmPassword}</label>
+              <input type="password" inputMode="numeric" maxLength="4" value={adminPwForm.confirm_password} onChange={(e) => setAdminPwForm({ ...adminPwForm, confirm_password: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="••••" />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button className="btn btn-primary" onClick={handleAdminChangePassword} disabled={adminPwLoading} style={{ flex: 1 }}>
+                {adminPwLoading ? 'Changing...' : t.changePassword}
+              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowChangePw(false); setAdminPwForm({ old_password: '', new_password: '', confirm_password: '' }); }} style={{ flex: 1 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-content">
         <div className="tabs">

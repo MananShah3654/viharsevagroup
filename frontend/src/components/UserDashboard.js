@@ -57,6 +57,13 @@ const translations = {
     completeProfile: 'Complete Profile',
     profileComplete: 'Congratulations! Profile Updated 100%',
     profileCompleteMessage: 'Your profile is now complete with all required information.',
+    changePassword: 'Change Password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password (4 digits)',
+    confirmPassword: 'Confirm New Password',
+    passwordChanged: 'Password changed successfully!',
+    passwordMismatch: 'New passwords do not match',
+    passwordInvalid: 'Password must be exactly 4 digits',
   },
   gu: {
     dashboard: 'યુઝર ડેશબોર્ડ',
@@ -112,6 +119,13 @@ const translations = {
     completeProfile: 'પ્રોફાઇલ પૂર્ણ કરો',
     profileComplete: 'અભિનંદન! પ્રોફાઇલ 100% અપડેટ થઈ',
     profileCompleteMessage: 'તમારું પ્રોફાઇલ હવે બધી જરૂરી માહિતી સાથે પૂર્ણ છે.',
+    changePassword: 'પાસવર્ડ બદલો',
+    currentPassword: 'હાલનો પાસવર્ડ',
+    newPassword: 'નવો પાસવર્ડ (4 અંક)',
+    confirmPassword: 'નવો પાસવર્ડ ફરીથી',
+    passwordChanged: 'પાસવર્ડ સફળતાપૂર્વક બદલ્યો!',
+    passwordMismatch: 'નવા પાસવર્ડ મેળ ખાતા નથી',
+    passwordInvalid: 'પાસવર્ડ બરાબર 4 અંક હોવો જોઈએ',
   },
 };
 
@@ -135,6 +149,8 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     date_of_birth: user.date_of_birth || '',
   });
   const [photoPreview, setPhotoPreview] = useState(user.photo || null);
+  const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [pwLoading, setPwLoading] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [showTop10, setShowTop10] = useState(true); // Show top 10 entries
   const [currentPage, setCurrentPage] = useState(1);
@@ -357,6 +373,31 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
       toast.error('Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!pwForm.old_password || !pwForm.new_password || !pwForm.confirm_password) {
+      toast.error('Please fill all password fields'); return;
+    }
+    if (!/^\d{4}$/.test(pwForm.new_password)) {
+      toast.error(t.passwordInvalid); return;
+    }
+    if (pwForm.new_password !== pwForm.confirm_password) {
+      toast.error(t.passwordMismatch); return;
+    }
+    setPwLoading(true);
+    try {
+      await axiosInstance.post('/auth/change-password', {
+        old_password: pwForm.old_password,
+        new_password: pwForm.new_password,
+      });
+      toast.success(t.passwordChanged);
+      setPwForm({ old_password: '', new_password: '', confirm_password: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -1525,6 +1566,47 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                 <button className="btn btn-primary" onClick={handleUpdateProfile} disabled={loading} data-testid="update-profile-btn">
                   {loading ? 'Updating...' : t.updateProfile}
                 </button>
+
+                {/* Change Password */}
+                <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #eee' }}>
+                  <h4 style={{ marginBottom: '16px', color: '#3A3A3A' }}>{t.changePassword}</h4>
+                  <div className="form-group">
+                    <label>{t.currentPassword}</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength="4"
+                      value={pwForm.old_password}
+                      onChange={(e) => setPwForm({ ...pwForm, old_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="••••"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{t.newPassword}</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength="4"
+                      value={pwForm.new_password}
+                      onChange={(e) => setPwForm({ ...pwForm, new_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="••••"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{t.confirmPassword}</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength="4"
+                      value={pwForm.confirm_password}
+                      onChange={(e) => setPwForm({ ...pwForm, confirm_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="••••"
+                    />
+                  </div>
+                  <button className="btn btn-primary" onClick={handleChangePassword} disabled={pwLoading}>
+                    {pwLoading ? 'Changing...' : t.changePassword}
+                  </button>
+                </div>
               </div>
 
               {/* Right Side - Photo Preview */}

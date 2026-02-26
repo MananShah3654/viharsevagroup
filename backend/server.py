@@ -357,6 +357,31 @@ async def register(request: RegisterRequest):
     user_response = {k: v for k, v in user_dict.items() if k != "password_hash"}
     return TokenResponse(access_token=token, user=user_response)
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v):
+        if not v.isdigit():
+            raise ValueError('Password must contain only digits')
+        if len(v) != 4:
+            raise ValueError('Password must be exactly 4 digits')
+        return v
+
+@api_router.post("/auth/change-password")
+async def change_password(data: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Change password for the logged-in user"""
+    if not verify_password(data.old_password, current_user.get("password_hash", "")):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    new_hash = hash_password(data.new_password)
+    await db.users.update_one({"id": current_user["id"]}, {"$set": {"password_hash": new_hash}})
+    # Invalidate user cache
+    if cache:
+        await cache.delete(cache_key_user(current_user["id"]))
+    return {"message": "Password changed successfully"}
+
 # User Routes
 @api_router.get("/users/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
