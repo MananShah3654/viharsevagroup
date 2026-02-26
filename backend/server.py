@@ -637,7 +637,8 @@ def parse_whatsapp_message(message: str) -> dict:
             "vihar_date": "",
             "vihar_time": "",
             "sadhu_bhagvant": 0,
-            "wheelchair": False,
+            "sadhviji_bhagvant": 0,
+            "wheelchair": 0,
             "luggage": False,
             "dori": False,
             "car_required": False,
@@ -676,24 +677,44 @@ def parse_whatsapp_message(message: str) -> dict:
             if name:
                 parsed_data["sahebji_name"] = name
         
-        # Extract Vihar Date (વિહાર તારીખ- ૧૧/૧૨/૨૫ or 11/12/25)
+        # Extract Vihar Date (વિહાર તારીખ- ૧૧/૧૨/૨૫ or 11/12/25) → convert DD/MM/YY to YYYY-MM-DD
         date_match = re.search(r'વિહાર[તારીખ\s]*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+/[૦૧૨૩૪૫૬૭૮૯0-9]+/[૦૧૨૩૪૫૬૭૮૯0-9]+)', message, re.IGNORECASE)
         if date_match:
             date_str = convert_gujarati_num(date_match.group(1))
-            parsed_data["vihar_date"] = date_str
+            # Strip trailing commas/spaces
+            date_str = date_str.strip().rstrip(',').strip()
+            # Convert DD/MM/YY or DD/MM/YYYY to YYYY-MM-DD
+            date_parts = date_str.split('/')
+            if len(date_parts) == 3:
+                dd, mm, yy = date_parts[0].zfill(2), date_parts[1].zfill(2), date_parts[2]
+                if len(yy) == 2:
+                    yy = '20' + yy
+                parsed_data["vihar_date"] = f"{yy}-{mm}-{dd}"
+            else:
+                parsed_data["vihar_date"] = date_str
         
-        # Extract Vihar Time (વિહાર સમય સવારે ૫.૩૦વાગે or 5:30 or 5.30)
-        time_match = re.search(r'વિહાર[સમય\s]*[સવારેસાંજે]*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+)[.:]([૦૧૨૩૪૫૬૭૮૯0-9]+)', message, re.IGNORECASE)
+        # Extract Vihar Time (વિહાર સમય- સવારે ૫.૩૦ વાગે or 5:30 or 5.30)
+        # Format: "વિહાર સમય- સવારે ૫.૦૦ વાગે" — word સવારે/સાંજે may appear after the dash
+        time_match = re.search(
+            r'વિહાર\s*સમય\s*[-\s]*(?:સવારે|સાંજે)?\s*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+)[.:]([૦૧૨૩૪૫૬૭૮૯0-9]+)',
+            message, re.IGNORECASE
+        )
         if time_match:
             hour = convert_gujarati_num(time_match.group(1))
             minute = convert_gujarati_num(time_match.group(2))
-            parsed_data["vihar_time"] = f"{hour}:{minute}"
+            parsed_data["vihar_time"] = f"{int(hour):02d}:{minute.zfill(2)}"
         
-        # Extract Sadhviji/Sadhu Bhagvant (સાધ્વીજી ભગવંત -૪ or થાના ભગવંત -૪)
-        bhagvant_match = re.search(r'(સાધ્વીજી|થાના|સાધુ)[ભગવંત\s]*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+)', message, re.IGNORECASE)
-        if bhagvant_match:
-            bhagvant_str = convert_gujarati_num(bhagvant_match.group(2))
-            parsed_data["sadhu_bhagvant"] = int(bhagvant_str) if bhagvant_str.isdigit() else 0
+        # Extract Sadhviji/Sadhu Bhagvant counts separately
+        # "સાધ્વીજી ભગવંત - ૩" → sadhviji_bhagvant
+        # "સાધુ ભગવંત - ૩" or "થાના ભગવંત - ૩" → sadhu_bhagvant
+        for bhagvant_match in re.finditer(r'(સાધ્વીજી|સાધુ|થાના)\s*ભગવંત\s*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+)', message, re.IGNORECASE):
+            kind = bhagvant_match.group(1)
+            count_str = convert_gujarati_num(bhagvant_match.group(2))
+            count = int(count_str) if count_str.isdigit() else 0
+            if kind == 'સાધ્વીજી':
+                parsed_data["sadhviji_bhagvant"] = count
+            else:
+                parsed_data["sadhu_bhagvant"] = count
         
         # Extract Wheelchair (વિલ ચેર- ૦ or વિલ ચેર- 1)
         wheelchair_match = re.search(r'વિલ[ચેર\s]*[-\s]*([૦૧૨૩૪૫૬૭૮૯0-9]+|હા|ના|નથી)', message, re.IGNORECASE)
@@ -717,10 +738,11 @@ def parse_whatsapp_message(message: str) -> dict:
             parsed_data["dori"] = dori_val not in ['ના', 'નથી', '0', 'no', 'false'] and dori_val != ''
         
         # Extract Car Required if mentioned
-        car_match = re.search(r'કાર[-\s]*([હા|ના|નથી|જરૂરી]+)', message, re.IGNORECASE)
+        # Handles: "કાર જ - હા", "કાર- હા", "કાર- ના"
+        car_match = re.search(r'કાર\s*(?:જ\s*)?[-\s]*(.+?)(?:\n|$)', message, re.IGNORECASE)
         if car_match:
             car_val = car_match.group(1).strip()
-            parsed_data["car_required"] = 'હા' in car_val or 'જરૂરી' in car_val
+            parsed_data["car_required"] = 'હા' in car_val or ('જ' in car_val and 'ના' not in car_val)
         
         # Extract From and To Upashray (both start with ક્યાં ઉપાશ્રય)
         # Find all occurrences
@@ -943,6 +965,64 @@ async def create_vihar_from_whatsapp(whatsapp_data: WhatsAppMessage, admin: dict
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create vihar from WhatsApp message: {str(e)}"
         )
+
+class BulkWhatsAppImport(BaseModel):
+    messages: str  # Raw pasted text containing one or more messages
+
+@api_router.post("/vihars/bulk-from-whatsapp", dependencies=[Depends(get_admin_user)])
+async def bulk_create_vihars_from_whatsapp(data: BulkWhatsAppImport, admin: dict = Depends(get_admin_user)):
+    """Bulk-create vihars from pasted WhatsApp messages (Admin only).
+    Messages are split on 'રૂટ-' prefix and each is parsed individually."""
+    try:
+        raw_text = data.messages.strip()
+        # Split on each occurrence of રૂટ- to get individual messages
+        # Keep the delimiter by using a lookahead
+        segments = re.split(r'(?=રૂટ[-\s]*[0-9૦-૯])', raw_text)
+        segments = [s.strip() for s in segments if s.strip()]
+
+        if not segments:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No messages found. Messages must start with 'રૂટ-'")
+
+        results = []
+        errors = []
+        vihar_docs = []
+        now = datetime.now(timezone.utc).isoformat()
+
+        for idx, segment in enumerate(segments):
+            try:
+                parsed_data = parse_whatsapp_message(segment)
+                # Validate required fields
+                missing = [f for f in ["route_no", "vihar_date", "vihar_time", "from_upashray", "to_upashray"] if not parsed_data.get(f)]
+                if missing:
+                    errors.append({"index": idx + 1, "segment": segment[:80], "error": f"Missing: {', '.join(missing)}", "parsed": parsed_data})
+                    continue
+                vihar_data = ViharCreate(**parsed_data)
+                vihar = Vihar(**vihar_data.model_dump(), created_by=admin["id"], created_on=now)
+                vihar_docs.append(vihar.model_dump())
+                results.append({"index": idx + 1, "route_no": parsed_data["route_no"], "vihar_date": parsed_data["vihar_date"]})
+            except Exception as e:
+                errors.append({"index": idx + 1, "segment": segment[:80], "error": str(e)})
+
+        if vihar_docs:
+            await db.vihars.insert_many(vihar_docs)
+            # Invalidate vihars cache
+            if cache:
+                async for key in cache.scan_iter("vihars:*"):
+                    await cache.delete(key)
+
+        logger.info(f"Bulk WhatsApp import: {len(vihar_docs)} saved, {len(errors)} errors")
+        return {
+            "status": "success",
+            "saved": len(vihar_docs),
+            "errors": len(errors),
+            "results": results,
+            "error_details": errors
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bulk WhatsApp import failed: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @api_router.get("/vihars")
 async def get_all_vihars(
