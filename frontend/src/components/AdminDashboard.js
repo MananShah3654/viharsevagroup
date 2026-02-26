@@ -1836,208 +1836,222 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
             </div>
 
             {showCreateVihar && (
-              <div className="card" style={{ background: 'rgba(168, 198, 159, 0.1)', marginBottom: '20px' }}>
-                <h3>{editingViharId ? t.updateVihar : t.createVihar}</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
-                  <div className="form-group">
-                    <label>{t.routeNo}</label>
-                    <input
-                      type="text"
-                      value={viharForm.route_no}
-                      onChange={(e) => setViharForm({ ...viharForm, route_no: e.target.value })}
-                      data-testid="route-no-input"
-                    />
+              <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowCreateVihar(false); setEditingViharId(null); resetViharForm(); } }}>
+                <div className="vihar-form-modal">
+                  {/* Sticky Header */}
+                  <div className="vihar-form-modal-header">
+                    <h3>{editingViharId ? t.updateVihar : t.createVihar}</h3>
+                    <button className="vihar-form-modal-close" onClick={() => { setShowCreateVihar(false); setEditingViharId(null); resetViharForm(); }} aria-label="Close">✕</button>
                   </div>
-                  <div className="form-group">
-                    <label>{t.sahebjiName}</label>
-                    <input
-                      type="text"
-                      value={viharForm.sahebji_name}
-                      onChange={(e) => setViharForm({ ...viharForm, sahebji_name: e.target.value })}
-                      data-testid="sahebji-name-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.viharDate}</label>
-                    <input
-                      type="date"
-                      value={viharForm.vihar_date}
-                      onChange={(e) => setViharForm({ ...viharForm, vihar_date: e.target.value })}
-                      data-testid="vihar-date-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.viharTime}</label>
-                    <input
-                      type="time"
-                      value={viharForm.vihar_time}
-                      onChange={(e) => setViharForm({ ...viharForm, vihar_time: e.target.value })}
-                      data-testid="vihar-time-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.sadhuBhagvant}</label>
-                    <input
-                      type="number"
-                      value={viharForm.sadhu_bhagvant}
-                      onChange={(e) => setViharForm({ ...viharForm, sadhu_bhagvant: e.target.value })}
-                      data-testid="sadhu-count-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.sadhvijiBhagvant}</label>
-                    <input
-                      type="number"
-                      value={viharForm.sadhviji_bhagvant}
-                      onChange={(e) => setViharForm({ ...viharForm, sadhviji_bhagvant: e.target.value })}
-                      data-testid="sadhviji-count-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.mumukshu}</label>
-                    <input
-                      type="number"
-                      value={viharForm.mumukshu}
-                      onChange={(e) => setViharForm({ ...viharForm, mumukshu: e.target.value })}
-                      data-testid="mumukshu-count-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.fromUpashray}</label>
-                    <input
-                      type="text"
-                      value={viharForm.from_upashray}
-                      onChange={(e) => setViharForm({ ...viharForm, from_upashray: e.target.value })}
-                      data-testid="from-upashray-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.toUpashray}</label>
-                    <input
-                      type="text"
-                      value={viharForm.to_upashray}
-                      onChange={(e) => setViharForm({ ...viharForm, to_upashray: e.target.value })}
-                      data-testid="to-upashray-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>{t.approxKms}</label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={viharForm.approx_kms}
-                        onChange={(e) => setViharForm({ ...viharForm, approx_kms: e.target.value })}
-                        data-testid="approx-kms-input"
-                        style={{ flex: 1 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCalculateDistance}
-                        disabled={loading || !viharForm.from_upashray || !viharForm.to_upashray}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#7FA588',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 'not-allowed' : 'pointer',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          whiteSpace: 'nowrap',
-                          opacity: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 0.6 : 1,
-                          transition: 'all 0.2s'
-                        }}
-                        title="Calculate distance between From and To locations"
-                      >
-                        {loading ? t.calculating : t.calculateDistance}
-                      </button>
+
+                  {/* Scrollable Body */}
+                  <div className="vihar-form-modal-body">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                      <div className="form-group">
+                        <label>{t.routeNo}</label>
+                        <input
+                          type="text"
+                          value={viharForm.route_no}
+                          onChange={(e) => setViharForm({ ...viharForm, route_no: e.target.value })}
+                          data-testid="route-no-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.sahebjiName}</label>
+                        <input
+                          type="text"
+                          value={viharForm.sahebji_name}
+                          onChange={(e) => setViharForm({ ...viharForm, sahebji_name: e.target.value })}
+                          data-testid="sahebji-name-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.viharDate}</label>
+                        <input
+                          type="date"
+                          value={viharForm.vihar_date}
+                          onChange={(e) => setViharForm({ ...viharForm, vihar_date: e.target.value })}
+                          data-testid="vihar-date-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.viharTime}</label>
+                        <input
+                          type="time"
+                          value={viharForm.vihar_time}
+                          onChange={(e) => setViharForm({ ...viharForm, vihar_time: e.target.value })}
+                          data-testid="vihar-time-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.sadhuBhagvant}</label>
+                        <input
+                          type="number"
+                          value={viharForm.sadhu_bhagvant}
+                          onChange={(e) => setViharForm({ ...viharForm, sadhu_bhagvant: e.target.value })}
+                          data-testid="sadhu-count-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.sadhvijiBhagvant}</label>
+                        <input
+                          type="number"
+                          value={viharForm.sadhviji_bhagvant}
+                          onChange={(e) => setViharForm({ ...viharForm, sadhviji_bhagvant: e.target.value })}
+                          data-testid="sadhviji-count-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.mumukshu}</label>
+                        <input
+                          type="number"
+                          value={viharForm.mumukshu}
+                          onChange={(e) => setViharForm({ ...viharForm, mumukshu: e.target.value })}
+                          data-testid="mumukshu-count-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.fromUpashray}</label>
+                        <input
+                          type="text"
+                          value={viharForm.from_upashray}
+                          onChange={(e) => setViharForm({ ...viharForm, from_upashray: e.target.value })}
+                          data-testid="from-upashray-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.toUpashray}</label>
+                        <input
+                          type="text"
+                          value={viharForm.to_upashray}
+                          onChange={(e) => setViharForm({ ...viharForm, to_upashray: e.target.value })}
+                          data-testid="to-upashray-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.approxKms}</label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={viharForm.approx_kms}
+                            onChange={(e) => setViharForm({ ...viharForm, approx_kms: e.target.value })}
+                            data-testid="approx-kms-input"
+                            style={{ flex: 1 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCalculateDistance}
+                            disabled={loading || !viharForm.from_upashray || !viharForm.to_upashray}
+                            style={{
+                              padding: '8px 16px',
+                              background: '#7FA588',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              whiteSpace: 'nowrap',
+                              opacity: loading || !viharForm.from_upashray || !viharForm.to_upashray ? 0.6 : 1,
+                              transition: 'all 0.2s'
+                            }}
+                            title="Calculate distance between From and To locations"
+                          >
+                            {loading ? t.calculating : t.calculateDistance}
+                          </button>
+                        </div>
+                        <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+                          {t.calculateDistanceHint}
+                        </small>
+                      </div>
                     </div>
-                    <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
-                      {t.calculateDistanceHint}
-                    </small>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
-                  <div className="form-group" style={{ minWidth: '200px' }}>
-                    <label>{t.wheelchair}</label>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={viharForm.wheelchair}
-                        onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.value })}
-                        data-testid="wheelchair-input"
-                        placeholder="0"
-                        style={{ flex: 1 }}
-                      />
-                      <div className="checkbox-group" style={{ margin: 0, padding: '8px 12px', minHeight: 'auto' }}>
+
+                    {/* Wheelchair + Checkboxes */}
+                    <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div className="form-group" style={{ minWidth: '180px', marginBottom: 0 }}>
+                        <label>{t.wheelchair}</label>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={viharForm.wheelchair}
+                            onChange={(e) => setViharForm({ ...viharForm, wheelchair: e.target.value })}
+                            data-testid="wheelchair-input"
+                            placeholder="0"
+                            style={{ flex: 1 }}
+                          />
+                          <div className="checkbox-group" style={{ margin: 0, padding: '8px 12px', minHeight: 'auto' }}>
+                            <input
+                              type="checkbox"
+                              checked={viharForm.self}
+                              onChange={(e) => setViharForm({ ...viharForm, self: e.target.checked })}
+                              data-testid="self-checkbox"
+                            />
+                            <label style={{ margin: 0, fontSize: '0.9rem' }}>{t.self}</label>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="checkbox-group">
                         <input
                           type="checkbox"
-                          checked={viharForm.self}
-                          onChange={(e) => setViharForm({ ...viharForm, self: e.target.checked })}
-                          data-testid="self-checkbox"
+                          checked={viharForm.luggage}
+                          onChange={(e) => setViharForm({ ...viharForm, luggage: e.target.checked })}
+                          data-testid="luggage-checkbox"
                         />
-                        <label style={{ margin: 0, fontSize: '0.9rem' }}>{t.self}</label>
+                        <label>{t.luggage}</label>
+                      </div>
+                      <div className="checkbox-group">
+                        <input
+                          type="checkbox"
+                          checked={viharForm.dori}
+                          onChange={(e) => setViharForm({ ...viharForm, dori: e.target.checked })}
+                          data-testid="dori-checkbox"
+                        />
+                        <label>{t.dori}</label>
+                      </div>
+                      <div className="checkbox-group">
+                        <input
+                          type="checkbox"
+                          checked={viharForm.car_required}
+                          onChange={(e) => setViharForm({ ...viharForm, car_required: e.target.checked })}
+                          data-testid="car-required-checkbox"
+                        />
+                        <label>{t.carRequired}</label>
+                      </div>
+                      <div className="checkbox-group">
+                        <input
+                          type="checkbox"
+                          checked={viharForm.activa}
+                          onChange={(e) => setViharForm({ ...viharForm, activa: e.target.checked })}
+                          data-testid="activa-checkbox"
+                        />
+                        <label>{t.activa}</label>
                       </div>
                     </div>
                   </div>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      checked={viharForm.luggage}
-                      onChange={(e) => setViharForm({ ...viharForm, luggage: e.target.checked })}
-                      data-testid="luggage-checkbox"
-                    />
-                    <label>{t.luggage}</label>
+
+                  {/* Sticky Footer */}
+                  <div className="vihar-form-modal-footer">
+                    <button className="btn btn-primary" onClick={editingViharId ? handleUpdateVihar : handleCreateVihar} disabled={loading} data-testid="submit-vihar-btn">
+                      {editingViharId ? t.updateVihar : t.create}
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ background: '#25D366', color: 'white' }}
+                      onClick={handleCopyToWhatsApp}
+                      data-testid="copy-whatsapp-btn"
+                    >
+                      📱 {t.copyToWhatsApp}
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => {
+                      setShowCreateVihar(false);
+                      setEditingViharId(null);
+                      resetViharForm();
+                    }} data-testid="cancel-vihar-btn">
+                      {t.cancel}
+                    </button>
                   </div>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      checked={viharForm.dori}
-                      onChange={(e) => setViharForm({ ...viharForm, dori: e.target.checked })}
-                      data-testid="dori-checkbox"
-                    />
-                    <label>{t.dori}</label>
-                  </div>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      checked={viharForm.car_required}
-                      onChange={(e) => setViharForm({ ...viharForm, car_required: e.target.checked })}
-                      data-testid="car-required-checkbox"
-                    />
-                    <label>{t.carRequired}</label>
-                  </div>
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      checked={viharForm.activa}
-                      onChange={(e) => setViharForm({ ...viharForm, activa: e.target.checked })}
-                      data-testid="activa-checkbox"
-                    />
-                    <label>{t.activa}</label>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary" onClick={editingViharId ? handleUpdateVihar : handleCreateVihar} disabled={loading} data-testid="submit-vihar-btn">
-                    {editingViharId ? t.updateVihar : t.create}
-                  </button>
-                  <button 
-                    className="btn" 
-                    style={{ background: '#25D366', color: 'white' }} 
-                    onClick={handleCopyToWhatsApp}
-                    data-testid="copy-whatsapp-btn"
-                  >
-                    📱 {t.copyToWhatsApp}
-                  </button>
-                  <button className="btn btn-secondary" onClick={() => {
-                    setShowCreateVihar(false);
-                    setEditingViharId(null);
-                    resetViharForm();
-                  }} data-testid="cancel-vihar-btn">
-                    {t.cancel}
-                  </button>
                 </div>
               </div>
             )}

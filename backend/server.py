@@ -190,6 +190,9 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
     area: str
+    blood_group: str
+    emergency_contact: str
+    date_of_birth: str
     
     @field_validator('password')
     @classmethod
@@ -209,6 +212,9 @@ class UserCreate(BaseModel):
     area: Optional[str] = None
     address: Optional[str] = None
     car: bool = False
+    blood_group: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    date_of_birth: Optional[str] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -218,6 +224,9 @@ class UserUpdate(BaseModel):
     address: Optional[str] = None
     car: Optional[bool] = None
     password: Optional[str] = None
+    blood_group: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    date_of_birth: Optional[str] = None
 
 class ViharCreate(BaseModel):
     route_no: Optional[str] = None  # Optional - auto-generated if not provided, but can be manually set
@@ -334,7 +343,10 @@ async def register(request: RegisterRequest):
         password_hash=hash_password(request.password),
         name=request.name,
         area=request.area,
-        role="user"
+        role="user",
+        blood_group=request.blood_group,
+        emergency_contact=request.emergency_contact,
+        date_of_birth=request.date_of_birth
     )
     
     user_dict = user.model_dump()
@@ -355,7 +367,17 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
 @api_router.put("/users/me")
 async def update_user_profile(update_data: UserUpdate, current_user: dict = Depends(get_current_user)):
     """Update user profile"""
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    # Filter out None values and empty strings for optional fields, but keep empty strings for mandatory fields
+    update_dict = {}
+    for k, v in update_data.model_dump().items():
+        if v is not None:
+            # For mandatory fields (blood_group, emergency_contact, date_of_birth), allow empty strings
+            if k in ['blood_group', 'emergency_contact', 'date_of_birth']:
+                update_dict[k] = v
+            # For other optional fields, skip empty strings
+            elif v != '':
+                update_dict[k] = v
+    
     if update_dict:
         await db.users.update_one({"id": current_user["id"]}, {"$set": update_dict})
     updated_user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
@@ -793,11 +815,12 @@ async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = 
         
         # Invalidate cache
         if cache:
+            await cache.delete_prefix("vihars:user:")
             await cache.delete(cache_key_vihars_list({}))
             await cache.delete(cache_key_reports("weekly"))
             await cache.delete(cache_key_reports("monthly"))
             await cache.delete(cache_key_reports("yearly"))
-        
+
         logger.info(f"Vihar created successfully: {vihar.id} with route_no: {vihar.route_no}")
         return vihar_dict
     except Exception as e:
@@ -851,6 +874,7 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request,
         # Invalidate cache
         if cache:
             await cache.delete(cache_key_vihar(vihar_id))
+            await cache.delete_prefix("vihars:user:")
             await cache.delete(cache_key_vihars_list({}))
             await cache.delete(cache_key_participants(vihar_id))
         
@@ -874,10 +898,16 @@ async def delete_vihar(vihar_id: str):
     
     # Delete vihar
     await db.vihars.delete_one({"id": vihar_id})
-    
+
     # Delete associated participations
     await db.participations.delete_many({"vihar_id": vihar_id})
-    
+
+    # Invalidate cache
+    if cache:
+        await cache.delete(cache_key_vihar(vihar_id))
+        await cache.delete_prefix("vihars:user:")
+        await cache.delete(cache_key_vihars_list({}))
+
     logger.info(f"Vihar deleted successfully: {vihar_id}")
     return {"status": "success", "message": "Vihar deleted successfully"}
 

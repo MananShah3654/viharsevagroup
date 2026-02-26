@@ -53,7 +53,14 @@ class LRUCache:
         async with self.lock:
             if key in self.cache:
                 del self.cache[key]
-    
+
+    async def delete_prefix(self, prefix: str):
+        """Delete all cache entries whose key starts with the given prefix"""
+        async with self.lock:
+            keys_to_delete = [k for k in self.cache if k.startswith(prefix)]
+            for k in keys_to_delete:
+                del self.cache[k]
+
     async def clear(self):
         async with self.lock:
             self.cache.clear()

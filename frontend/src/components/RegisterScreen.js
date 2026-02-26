@@ -24,6 +24,12 @@ const translations = {
     nameRequired: 'Name is required',
     areaRequired: 'Area is required',
     passwordRequired: 'Password is required',
+    bloodGroup: 'Blood Group',
+    bloodGroupRequired: 'Blood group is required',
+    emergencyContact: 'Emergency Contact No',
+    emergencyContactRequired: 'Emergency contact number is required',
+    dateOfBirth: 'Date of Birth',
+    dateOfBirthRequired: 'Date of birth is required',
   },
   gu: {
     title: '\u0ab5\u0abf\u0ab9\u0abe\u0ab0 \u0ab8\u0ac7\u0ab5\u0abe \u0a97\u0acd\u0ab0\u0ac1\u0aaa',
@@ -45,6 +51,12 @@ const translations = {
     nameRequired: '\u0aa8\u0abe\u0aae \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
     areaRequired: '\u0ab5\u0abf\u0ab8\u0acd\u0aa4\u0abe\u0ab0 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
     passwordRequired: '\u0aaa\u0abe\u0ab8\u0ab5\u0ab0\u0acd\u0aa1 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
+    bloodGroup: '\u0ab0\u0a95\u0acd\u0aa4 \u0a97\u0acd\u0ab0\u0ac1\u0aaa',
+    bloodGroupRequired: '\u0ab0\u0a95\u0acd\u0aa4 \u0a97\u0acd\u0ab0\u0ac1\u0aaa \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
+    emergencyContact: '\u0a8f\u0a95\u0aa1\u0abf\u0a9c\u0aa8\u0acd\u0ab8\u0ac0 \u0a95\u0aa8\u0acd\u0a9f\u0ac7\u0a95\u0acd\u0a9f \u0aa8\u0a82\u0aac\u0ab0',
+    emergencyContactRequired: '\u0a8f\u0a95\u0aa1\u0abf\u0a9c\u0aa8\u0acd\u0ab8\u0ac0 \u0a95\u0aa8\u0acd\u0a9f\u0ac7\u0a95\u0acd\u0a9f \u0aa8\u0a82\u0aac\u0ab0 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
+    dateOfBirth: '\u0a9c\u0aa8\u0acd\u0aae \u0aa4\u0abe\u0ab0\u0ac0\u0a96',
+    dateOfBirthRequired: '\u0a9c\u0aa8\u0acd\u0aae \u0aa4\u0abe\u0ab0\u0ac0\u0a96 \u0a86\u0ab5\u0ab6\u0acd\u0aaf\u0a95 \u0ab9\u0ac7',
   },
 };
 
@@ -56,6 +68,9 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
   const [area, setArea] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [loading, setLoading] = useState(false);
 
 
@@ -81,6 +96,21 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
       return;
     }
     
+    if (!bloodGroup || bloodGroup.trim() === '') {
+      toast.error(t.bloodGroupRequired);
+      return;
+    }
+    
+    if (!emergencyContact || emergencyContact.trim() === '') {
+      toast.error(t.emergencyContactRequired);
+      return;
+    }
+    
+    if (!dateOfBirth || dateOfBirth.trim() === '') {
+      toast.error(t.dateOfBirthRequired);
+      return;
+    }
+    
     if (!password) {
       toast.error(t.passwordRequired);
       return;
@@ -102,7 +132,15 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
     let registrationSucceeded = false;
     
     try {
-      const response = await axiosInstance.post('/auth/register', { phone, password, name: name.trim(), area: area.trim() });
+      const response = await axiosInstance.post('/auth/register', { 
+        phone, 
+        password, 
+        name: name.trim(), 
+        area: area.trim(),
+        blood_group: bloodGroup.trim(),
+        emergency_contact: emergencyContact.trim(),
+        date_of_birth: dateOfBirth.trim()
+      });
       
       // If we get here, registration was successful
       if (response && response.data) {
@@ -113,6 +151,9 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
         setArea('');
         setPassword('');
         setConfirmPassword('');
+        setBloodGroup('');
+        setEmergencyContact('');
+        setDateOfBirth('');
         setTimeout(() => {
           navigate('/login');
         }, 1500);
@@ -144,6 +185,9 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
             setArea('');
             setPassword('');
             setConfirmPassword('');
+            setBloodGroup('');
+            setEmergencyContact('');
+            setDateOfBirth('');
             setTimeout(() => {
               navigate('/');
             }, 1500);
@@ -204,9 +248,9 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
           <p style={{ textAlign: 'center', color: '#757575', marginBottom: '24px', fontSize: '0.95rem' }}>
             {t.createAccount}
           </p>
-          <form onSubmit={handleRegister} noValidate>
-            <div className="form-group">
-              <label>{t.phoneNumber}</label>
+          <form onSubmit={handleRegister} noValidate className="register-form">
+            <div className="form-group form-group-full">
+              <label>{t.phoneNumber} <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="tel"
                 value={phone}
@@ -220,8 +264,8 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
                 maxLength="10"
               />
             </div>
-            <div className="form-group">
-              <label>{t.name}</label>
+            <div className="form-group form-group-full">
+              <label>{t.name} <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="text"
                 value={name}
@@ -233,7 +277,7 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
               />
             </div>
             <div className="form-group">
-              <label>{t.area}</label>
+              <label>{t.area} <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="text"
                 value={area}
@@ -245,7 +289,42 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
               />
             </div>
             <div className="form-group">
-              <label>{t.password}</label>
+              <label>{t.bloodGroup} <span style={{ color: 'red' }}>*</span></label>
+              <input
+                type="text"
+                value={bloodGroup}
+                onChange={(e) => setBloodGroup(e.target.value)}
+                placeholder="A+, B+, O+, etc."
+                data-testid="register-blood-group-input"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>{t.emergencyContact} <span style={{ color: 'red' }}>*</span></label>
+              <input
+                type="tel"
+                value={emergencyContact}
+                onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))}
+                placeholder="9429617099"
+                maxLength="10"
+                data-testid="register-emergency-contact-input"
+                required
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
+            </div>
+            <div className="form-group">
+              <label>{t.dateOfBirth} <span style={{ color: 'red' }}>*</span></label>
+              <input
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                data-testid="register-date-of-birth-input"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>{t.password} <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="password"
                 value={password}
@@ -263,7 +342,7 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
               />
             </div>
             <div className="form-group">
-              <label>{t.confirmPassword}</label>
+              <label>{t.confirmPassword} <span style={{ color: 'red' }}>*</span></label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -292,10 +371,11 @@ const RegisterScreen = ({ onLogin, language, setLanguage }) => {
               onTouchEnd={(e) => {
                 e.currentTarget.style.opacity = '1';
               }}
+              style={{ gridColumn: '1 / -1', width: '100%' }}
             >
               {loading ? 'Registering...' : t.register}
             </button>
-            <p className="text-link">
+            <p className="text-link" style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '8px' }}>
               {t.alreadyHaveAccount} <span onClick={() => navigate('/login')}>{t.login}</span>
             </p>
           </form>

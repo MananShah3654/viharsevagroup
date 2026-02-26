@@ -32,6 +32,9 @@ const translations = {
     downloadPDF: 'Download PDF',
     downloadExcel: 'Download Excel',
     phone: 'Phone',
+    bloodGroup: 'Blood Group',
+    emergencyContact: 'Emergency Contact No',
+    dateOfBirth: 'Date of Birth',
     age: 'Age',
     area: 'Area',
     address: 'Address',
@@ -49,6 +52,11 @@ const translations = {
     next: 'Next',
     page: 'Page',
     of: 'of',
+    profileIncomplete: 'Complete Your Profile',
+    profileIncompleteMessage: 'Please complete your profile to 100% by adding your Blood Group, Emergency Contact, and Date of Birth.',
+    completeProfile: 'Complete Profile',
+    profileComplete: 'Congratulations! Profile Updated 100%',
+    profileCompleteMessage: 'Your profile is now complete with all required information.',
   },
   gu: {
     dashboard: 'યુઝર ડેશબોર્ડ',
@@ -79,6 +87,9 @@ const translations = {
     downloadPDF: 'PDF ડાઉનલોડ',
     downloadExcel: 'Excel ડાઉનલોડ',
     phone: 'ફોન',
+    bloodGroup: 'રક્ત ગ્રુપ',
+    emergencyContact: 'એકડિજન્સી કન્ટેક્ટ નંબર',
+    dateOfBirth: 'જન્મ તારીખ',
     age: 'ઉંમર',
     area: 'વિસ્તાર',
     address: 'સરનામું',
@@ -96,6 +107,11 @@ const translations = {
     next: 'આગળ',
     page: 'પાનું',
     of: 'માંથી',
+    profileIncomplete: 'તમારું પ્રોફાઇલ પૂર્ણ કરો',
+    profileIncompleteMessage: 'કૃપા કરીને તમારું પ્રોફાઇલ 100% પૂર્ણ કરો - રક્ત ગ્રુપ, એકડિજન્સી કન્ટેક્ટ અને જન્મ તારીખ ઉમેરો.',
+    completeProfile: 'પ્રોફાઇલ પૂર્ણ કરો',
+    profileComplete: 'અભિનંદન! પ્રોફાઇલ 100% અપડેટ થઈ',
+    profileCompleteMessage: 'તમારું પ્રોફાઇલ હવે બધી જરૂરી માહિતી સાથે પૂર્ણ છે.',
   },
 };
 
@@ -114,6 +130,9 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     area: user.area || '',
     address: user.address || '',
     car: user.car || false,
+    blood_group: user.blood_group || '',
+    emergency_contact: user.emergency_contact || '',
+    date_of_birth: user.date_of_birth || '',
   });
   const [photoPreview, setPhotoPreview] = useState(user.photo || null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -125,6 +144,13 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
     myVihars: false,
     reports: false
   });
+
+  // Check if profile is complete
+  const isProfileComplete = () => {
+    return !!(user.blood_group && user.blood_group.trim() && 
+              user.emergency_contact && user.emergency_contact.trim() && 
+              user.date_of_birth && user.date_of_birth.trim());
+  };
 
   useEffect(() => {
     if (activeTab === 'allVihars' && !dataLoaded.allVihars) {
@@ -280,13 +306,51 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   };
 
   const handleUpdateProfile = async () => {
+    // Validation for mandatory fields
+    if (!profileForm.blood_group || profileForm.blood_group.trim() === '') {
+      toast.error('Please enter blood group');
+      return;
+    }
+    
+    if (!profileForm.emergency_contact || profileForm.emergency_contact.trim() === '') {
+      toast.error('Please enter emergency contact number');
+      return;
+    }
+    
+    if (!profileForm.date_of_birth || profileForm.date_of_birth.trim() === '') {
+      toast.error('Please enter date of birth');
+      return;
+    }
+    
     setLoading(true);
     try {
-      await axiosInstance.put('/users/me', {
+      const response = await axiosInstance.put('/users/me', {
         ...profileForm,
         age: profileForm.age ? parseInt(profileForm.age) : null,
+        blood_group: profileForm.blood_group.trim(),
+        emergency_contact: profileForm.emergency_contact.trim(),
+        date_of_birth: profileForm.date_of_birth.trim(),
       });
-      toast.success(t.profileUpdated);
+      
+      // Check if profile is now complete
+      const isNowComplete = !!(profileForm.blood_group.trim() && 
+                                profileForm.emergency_contact.trim() && 
+                                profileForm.date_of_birth.trim());
+      
+      if (isNowComplete) {
+        toast.success(t.profileComplete, {
+          style: {
+            background: '#10b981',
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+          duration: 5000,
+        });
+      } else {
+        toast.success(t.profileUpdated);
+      }
+      
       // Update user object in parent component if needed
       // The user object will be refreshed on next login
     } catch (error) {
@@ -392,6 +456,138 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
         {/* All Vihars Tab */}
         {activeTab === 'allVihars' && (
           <div className="card">
+            {/* Profile Completion Success Banner */}
+            {isProfileComplete() && (
+              <div style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderRadius: '16px',
+                padding: '20px 24px',
+                marginBottom: '24px',
+                boxShadow: '0 8px 24px rgba(16, 185, 129, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                animation: 'slideDown 0.5s ease-out'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '28px',
+                  flexShrink: 0
+                }}>
+                  ✅
+                </div>
+                <div style={{ flex: '1' }}>
+                  <h3 style={{
+                    color: 'white',
+                    margin: 0,
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    marginBottom: '4px'
+                  }}>
+                    {t.profileComplete}
+                  </h3>
+                  <p style={{
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    margin: 0,
+                    fontSize: '0.95rem',
+                    lineHeight: '1.5'
+                  }}>
+                    {t.profileCompleteMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Profile Completion Banner */}
+            {!isProfileComplete() && (
+              <div style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '16px',
+                padding: '20px 24px',
+                marginBottom: '24px',
+                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px',
+                animation: 'slideDown 0.5s ease-out'
+              }}>
+                <div style={{ flex: '1', minWidth: '250px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '24px',
+                      flexShrink: 0
+                    }}>
+                      📋
+                    </div>
+                    <div>
+                      <h3 style={{
+                        color: 'white',
+                        margin: 0,
+                        fontSize: '1.25rem',
+                        fontWeight: '700',
+                        marginBottom: '4px'
+                      }}>
+                        {t.profileIncomplete}
+                      </h3>
+                      <p style={{
+                        color: 'rgba(255, 255, 255, 0.95)',
+                        margin: 0,
+                        fontSize: '0.95rem',
+                        lineHeight: '1.5'
+                      }}>
+                        {t.profileIncompleteMessage}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  style={{
+                    background: 'white',
+                    color: '#667eea',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  }}
+                >
+                  {t.completeProfile} →
+                </button>
+              </div>
+            )}
             <h3>{t.allVihars}</h3>
 
             {/* Filter and View Controls */}
@@ -1280,6 +1476,41 @@ const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
                     onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
                     rows="3"
                     data-testid="profile-address-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t.bloodGroup} <span style={{ color: 'red' }}>*</span></label>
+                  <input
+                    type="text"
+                    value={profileForm.blood_group}
+                    onChange={(e) => setProfileForm({ ...profileForm, blood_group: e.target.value })}
+                    placeholder="A+, B+, O+, etc."
+                    data-testid="profile-blood-group-input"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t.emergencyContact} <span style={{ color: 'red' }}>*</span></label>
+                  <input
+                    type="tel"
+                    value={profileForm.emergency_contact}
+                    onChange={(e) => setProfileForm({ ...profileForm, emergency_contact: e.target.value.replace(/\D/g, '') })}
+                    placeholder="9429617099"
+                    maxLength="10"
+                    data-testid="profile-emergency-contact-input"
+                    required
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t.dateOfBirth} <span style={{ color: 'red' }}>*</span></label>
+                  <input
+                    type="date"
+                    value={profileForm.date_of_birth}
+                    onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
+                    data-testid="profile-date-of-birth-input"
+                    required
                   />
                 </div>
                 <div className="checkbox-group">
