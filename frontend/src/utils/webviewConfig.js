@@ -85,6 +85,8 @@ export const lockToDomain = () => {
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
     if (link && link.href) {
+      // Always allow tel:, mailto:, sms: links (tap-to-call/email)
+      if (/^(tel:|mailto:|sms:)/i.test(link.href)) return;
       try {
         const url = new URL(link.href);
         if (url.origin !== currentOrigin && !isDomainAllowed(url.hostname)) {

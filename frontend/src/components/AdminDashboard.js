@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../App';
 import { toast } from 'sonner';
 import { Users, MapPin, Navigation, TrendingUp, UserCheck, Calendar } from 'lucide-react';
+import useBackButton from '../hooks/useBackButton';
 
 const translations = {
   en: {
@@ -250,6 +251,8 @@ const translations = {
 
 const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const t = translations[language];
+  // Handle Android back button — navigate back in history
+  useBackButton(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateVihar, setShowCreateVihar] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);

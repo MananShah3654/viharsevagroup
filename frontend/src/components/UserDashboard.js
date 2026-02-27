@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../App';
 import { toast } from 'sonner';
+import useBackButton from '../hooks/useBackButton';
 
 const translations = {
   en: {
@@ -131,6 +132,8 @@ const translations = {
 
 const UserDashboard = ({ user, onLogout, language, setLanguage }) => {
   const t = translations[language];
+  // Handle Android back button — navigate back or stay on current tab
+  useBackButton(true);
   const [activeTab, setActiveTab] = useState('allVihars');
   const [vihars, setVihars] = useState([]);
   const [myVihars, setMyVihars] = useState([]);
