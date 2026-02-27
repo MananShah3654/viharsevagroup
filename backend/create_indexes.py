@@ -12,9 +12,21 @@ from urllib.parse import quote_plus
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Manan123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
-mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
-db_name = os.environ.get('DB_NAME', 'ClusterCC')
+MONGO_USER = os.environ.get("MONGO_USER", "carboncredits")
+MONGO_PASS_RAW = os.environ.get("MONGO_PASS", "Manan123")
+MONGO_HOST = os.environ.get("MONGO_HOST", "clustercc.g83djvn.mongodb.net")
+db_name = os.environ.get("DB_NAME", "ClusterCC")
+
+MONGO_PASS = quote_plus(MONGO_PASS_RAW)
+
+mongo_url = (
+    f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_HOST}/{db_name}"
+    f"?retryWrites=true&w=majority&authSource=admin&authMechanism=SCRAM-SHA-256"
+)
+
+# default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Manan123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
+# mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
+# db_name = os.environ.get('DB_NAME', 'ClusterCC')
 
 async def create_indexes():
     """Create database indexes for optimal query performance"""
