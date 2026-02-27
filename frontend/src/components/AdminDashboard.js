@@ -311,6 +311,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
   const [userForm, setUserForm] = useState({
     phone: '',
     password: '',
+    confirm_password: '',
     name: '',
     age: '',
     area: '',
@@ -1208,7 +1209,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     setEditingUserId(userId);
     setUserForm({
       phone: user.phone || '',
-      password: '', // Don't populate password
+      password: '',
+      confirm_password: '',
       name: user.name || '',
       age: user.age || '',
       area: user.area || '',
@@ -1234,7 +1236,11 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
     
     if (userForm.password && (userForm.password.length !== 4 || !/^\d+$/.test(userForm.password))) {
-      toast.error('Password must be exactly 4 digits');
+      toast.error('New password must be exactly 4 digits');
+      return;
+    }
+    if (userForm.password && userForm.password !== userForm.confirm_password) {
+      toast.error('Passwords do not match');
       return;
     }
     
@@ -2234,28 +2240,23 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       data-testid="user-name-input"
                     />
                   </div>
-                  <div className="form-group">
-                    <label>Password {editingUserId && '(leave blank to keep current)'}</label>
-                    <input
-                      type="password"
-                      value={userForm.password}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        setUserForm({ ...userForm, password: value });
-                      }}
-                      placeholder={editingUserId ? 'Leave blank to keep current password' : '1234'}
-                      maxLength="4"
-                      pattern="[0-9]{4}"
-                      inputMode="numeric"
-                      required={!editingUserId}
-                      data-testid="user-password-input"
-                    />
-                    {!editingUserId && (
-                      <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
-                        Must be exactly 4 digits
-                      </small>
-                    )}
-                  </div>
+                  {/* Password field — required for new user, optional for edit */}
+                  {!editingUserId ? (
+                    <div className="form-group">
+                      <label>Password <span style={{ color: 'red' }}>*</span></label>
+                      <input
+                        type="password"
+                        value={userForm.password}
+                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                        placeholder="4-digit PIN"
+                        maxLength="4"
+                        inputMode="numeric"
+                        required
+                        data-testid="user-password-input"
+                      />
+                      <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>Must be exactly 4 digits</small>
+                    </div>
+                  ) : null}
                   <div className="form-group">
                     <label>{t.age}</label>
                     <input
@@ -2372,6 +2373,57 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                       </div>
                     )}
                   </div>
+                  {/* Change Password section — only visible when editing */}
+                  {editingUserId && (
+                    <div style={{
+                      marginTop: '24px',
+                      padding: '18px 20px',
+                      background: 'linear-gradient(135deg, #fff8f0 0%, #fff3e6 100%)',
+                      borderRadius: '12px',
+                      border: '1.5px solid #f7b731',
+                    }}>
+                      <div style={{ fontWeight: '700', color: '#c47a00', fontSize: '14px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        🔑 Change Password <span style={{ fontWeight: '400', color: '#999', fontSize: '12px' }}>(optional — leave blank to keep current)</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontSize: '13px' }}>New Password (4 digits)</label>
+                          <input
+                            type="password"
+                            value={userForm.password}
+                            onChange={(e) => setUserForm({ ...userForm, password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                            placeholder="••••"
+                            maxLength="4"
+                            inputMode="numeric"
+                            data-testid="user-password-input"
+                            style={{ letterSpacing: '6px', fontSize: '20px', textAlign: 'center' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontSize: '13px' }}>Confirm New Password</label>
+                          <input
+                            type="password"
+                            value={userForm.confirm_password}
+                            onChange={(e) => setUserForm({ ...userForm, confirm_password: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                            placeholder="••••"
+                            maxLength="4"
+                            inputMode="numeric"
+                            style={{
+                              letterSpacing: '6px', fontSize: '20px', textAlign: 'center',
+                              borderColor: userForm.confirm_password && userForm.password !== userForm.confirm_password ? '#e53e3e' : '',
+                            }}
+                          />
+                          {userForm.confirm_password && userForm.password !== userForm.confirm_password && (
+                            <small style={{ color: '#e53e3e', fontSize: '11px', marginTop: '3px', display: 'block' }}>Passwords do not match</small>
+                          )}
+                          {userForm.confirm_password && userForm.password === userForm.confirm_password && userForm.password.length === 4 && (
+                            <small style={{ color: '#38a169', fontSize: '11px', marginTop: '3px', display: 'block' }}>✓ Passwords match</small>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                   <button className="btn btn-primary" onClick={editingUserId ? handleUpdateUser : handleAddUser} disabled={loading} data-testid="submit-user-btn">
                     {editingUserId ? t.update : t.create}
