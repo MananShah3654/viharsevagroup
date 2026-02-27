@@ -1674,8 +1674,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               {/* Vihars Chart */}
               <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.viharTrends}</h3>
-                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
-                <ResponsiveContainer width="100%" height={300}>
+                <div style={{ width: '100%', height: '300px', backgroundColor: '#f9f9f9' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={(() => {
                     // Group vihars by month
@@ -1721,8 +1721,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               {/* User Growth Chart */}
               <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.userGrowth}</h3>
-                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
-                <ResponsiveContainer width="100%" height={300}>
+                <div style={{ width: '100%', height: '300px', backgroundColor: '#f9f9f9' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart 
                     data={(() => {
                     // Group users by month
@@ -1779,8 +1779,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
               {/* Top Routes Pie Chart */}
               <div className="card" style={{ padding: '20px', minHeight: '400px' }}>
                 <h3 style={{ marginBottom: '20px', color: '#2C3E50' }}>{t.topRoutes}</h3>
-                <div style={{ width: '100%', height: '300px', position: 'relative', backgroundColor: '#f9f9f9' }}>
-                <ResponsiveContainer width="100%" height={300}>
+                <div style={{ width: '100%', height: '300px', backgroundColor: '#f9f9f9' }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={(() => {
