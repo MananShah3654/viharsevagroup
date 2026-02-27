@@ -12,7 +12,7 @@ from urllib.parse import quote_plus
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Riaana123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
+default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Manan123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
 mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
 db_name = os.environ.get('DB_NAME', 'ClusterCC')
 

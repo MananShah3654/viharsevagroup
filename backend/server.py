@@ -65,7 +65,7 @@ logger = logging.getLogger(__name__)
 
 # MongoDB connection with optimized connection pooling
 # URL encode password if provided via env, otherwise use default with encoded password
-default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Riaana123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
+default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Manan123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
 mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
 db_name = os.environ.get('DB_NAME', 'ClusterCC')
 
