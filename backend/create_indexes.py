@@ -13,7 +13,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 MONGO_USER = os.environ.get("MONGO_USER", "carboncredits")
-MONGO_PASS_RAW = os.environ.get("MONGO_PASS", "Manan123")
+MONGO_PASS_RAW = os.environ.get("MONGO_PASS", "Vihar2026")
 MONGO_HOST = os.environ.get("MONGO_HOST", "clustercc.g83djvn.mongodb.net")
 db_name = os.environ.get("DB_NAME", "ClusterCC")
 
@@ -24,7 +24,7 @@ mongo_url = (
     f"?retryWrites=true&w=majority&authSource=admin&authMechanism=SCRAM-SHA-256"
 )
 
-# default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Manan123') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
+# default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Vihar2026') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
 # mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
 # db_name = os.environ.get('DB_NAME', 'ClusterCC')
 
