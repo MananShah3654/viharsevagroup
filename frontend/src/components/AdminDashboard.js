@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../App';
 import { toast } from 'sonner';
+import { Users, MapPin, Navigation, TrendingUp, UserCheck, Calendar } from 'lucide-react';
 
 const translations = {
   en: {
@@ -1537,115 +1538,99 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         {/* Dashboard Home Tab */}
         {activeTab === 'dashboard' && (
           <div style={{ padding: '20px 0' }}>
-            {/* Statistics Cards */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '20px', 
-              marginBottom: '30px' 
+
+            {/* Welcome Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, #7FA588 0%, #4a7c59 100%)',
+              borderRadius: '16px',
+              padding: '28px 32px',
+              marginBottom: '24px',
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              boxShadow: '0 8px 32px rgba(127,165,136,0.35)',
+              position: 'relative',
+              overflow: 'hidden',
             }}>
-              {/* Total Users Card */}
-              <div 
-                className="card" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
-                }}
-                onClick={() => setActiveTab('users')}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
-                }}
-              >
-                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalUsers}</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>{users.length}</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
-              </div>
-
-              {/* Total Vihars Card */}
-              <div 
-                className="card" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 15px rgba(245, 87, 108, 0.4)'
-                }}
-                onClick={() => setActiveTab('vihars')}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(245, 87, 108, 0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(245, 87, 108, 0.4)';
-                }}
-              >
-                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalVihars}</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>{vihars.length}</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
-              </div>
-
-              {/* Total KMs Card */}
-              <div 
-                className="card" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 15px rgba(79, 172, 254, 0.4)'
-                }}
-                onClick={() => setActiveTab('reports')}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(79, 172, 254, 0.4)';
-                }}
-              >
-                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.totalKmsCovered}</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  {vihars.reduce((sum, v) => sum + (parseFloat(v.approx_kms) || 0), 0).toFixed(1)}
+              <div style={{ position: 'absolute', right: '-40px', top: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', right: '60px', bottom: '-60px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+              <div>
+                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '6px', letterSpacing: '0.5px' }}>
+                  {new Date().toLocaleDateString(language === 'gu' ? 'gu-IN' : 'en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
-              </div>
-
-              {/* Active Participants Card */}
-              <div 
-                className="card" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 15px rgba(67, 233, 123, 0.4)'
-                }}
-                onClick={() => setActiveTab('vihars')}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(67, 233, 123, 0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(67, 233, 123, 0.4)';
-                }}
-              >
-                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>{t.activeParticipants}</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  {users.filter(u => u.role === 'user').length}
+                <div style={{ fontSize: '22px', fontWeight: '700', marginBottom: '4px' }}>
+                  🙏 જય જિનેન્દ્ર, {user?.name || 'Admin'}
                 </div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>→ {t.viewDetails}</div>
+                <div style={{ fontSize: '13px', opacity: 0.85 }}>
+                  {language === 'gu' ? 'વિહાર સેવા ગ્રૂપ — એડમિન ડેશબોર્ડ' : 'Vihar Seva Group — Admin Dashboard'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setActiveTab('vihars')}
+                  style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', color: 'white', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.32)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                >{t.vihars}</button>
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', color: 'white', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.32)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                >{t.reports}</button>
+              </div>
+            </div>
+
+            {/* Stat Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              {[
+                { icon: <MapPin size={20} />, value: vihars.length, label: t.totalVihars, sub: language === 'gu' ? 'કુલ વિહારો નોંધાયા' : 'Total vihars recorded', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', shadow: 'rgba(245,87,108,0.25)', tab: 'vihars' },
+                { icon: <Users size={20} />, value: users.length, label: t.totalUsers, sub: language === 'gu' ? 'નોંધાયેલ વિહારસેવકો' : 'Registered viharsevaks', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', shadow: 'rgba(102,126,234,0.25)', tab: 'users' },
+                { icon: <Navigation size={20} />, value: vihars.reduce((s, v) => s + (parseFloat(v.approx_kms) || 0), 0).toFixed(1) + ' km', label: t.totalKmsCovered, sub: language === 'gu' ? 'કુલ અંતર કાપ્યું' : 'Total distance covered', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', shadow: 'rgba(79,172,254,0.25)', tab: 'reports' },
+                { icon: <UserCheck size={20} />, value: users.filter(u => u.role === 'user').length, label: t.activeParticipants, sub: language === 'gu' ? 'સક્રિય સહભાગીઓ' : 'Active participants', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', shadow: 'rgba(67,233,123,0.25)', tab: 'users' },
+                { icon: <TrendingUp size={20} />, value: vihars.reduce((s, v) => s + (parseInt(v.sadhu_bhagvant) || 0), 0), label: language === 'gu' ? 'સાધુ ભગવંત' : 'Sadhu Bhagvant', sub: language === 'gu' ? 'કુલ સાધુ ભ. થાના' : 'Total sadhu bh. thana', gradient: 'linear-gradient(135deg, #fa8231 0%, #f7b731 100%)', shadow: 'rgba(250,130,49,0.25)', tab: 'reports' },
+                { icon: <Calendar size={20} />, value: vihars.reduce((s, v) => s + (parseInt(v.sadhviji_bhagvant) || 0), 0), label: language === 'gu' ? 'સાધ્વીજી ભગવંત' : 'Sadhviji Bhagvant', sub: language === 'gu' ? 'કુલ સાધ્વીજી ભ. થાના' : 'Total sadhviji bh. thana', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', shadow: 'rgba(161,140,209,0.25)', tab: 'reports' },
+              ].map((card, i) => (
+                <div
+                  key={i}
+                  onClick={() => setActiveTab(card.tab)}
+                  style={{ background: 'white', borderRadius: '14px', padding: '20px', cursor: 'pointer', boxShadow: `0 4px 20px ${card.shadow}`, border: '1px solid rgba(0,0,0,0.05)', transition: 'transform 0.2s, box-shadow 0.2s', display: 'flex', flexDirection: 'column', gap: '14px' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 10px 28px ${card.shadow}`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 20px ${card.shadow}`; }}
+                >
+                  <div style={{ width: '42px', height: '42px', borderRadius: '11px', background: card.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                    {card.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '26px', fontWeight: '700', color: '#1a202c', lineHeight: 1.1 }}>{card.value}</div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#4a5568', marginTop: '4px' }}>{card.label}</div>
+                    <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '2px' }}>{card.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* This Month Strip */}
+            <div style={{ background: 'white', borderRadius: '14px', padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#2d3748', marginBottom: '16px' }}>
+                📅 {language === 'gu' ? 'આ મહિનાની સારાંશ' : 'This Month Summary'}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0' }}>
+                {[
+                  { label: language === 'gu' ? 'વિહારો' : 'Vihars', color: '#f5576c', value: vihars.filter(v => { const d = new Date(v.vihar_date), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).length },
+                  { label: language === 'gu' ? 'નવા યુઝર્સ' : 'New Users', color: '#667eea', value: users.filter(u => { const d = new Date(u.created_at), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).length },
+                  { label: language === 'gu' ? 'કિ.મી.' : 'KMs', color: '#00b4d8', value: vihars.filter(v => { const d = new Date(v.vihar_date), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).reduce((s, v) => s + (parseFloat(v.approx_kms) || 0), 0).toFixed(1) },
+                  { label: language === 'gu' ? 'સાધુ ભ.' : 'Sadhu Bh.', color: '#fa8231', value: vihars.filter(v => { const d = new Date(v.vihar_date), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).reduce((s, v) => s + (parseInt(v.sadhu_bhagvant) || 0), 0) },
+                  { label: language === 'gu' ? 'સાધ્વીજી ભ.' : 'Sadhviji Bh.', color: '#a18cd1', value: vihars.filter(v => { const d = new Date(v.vihar_date), n = new Date(); return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear(); }).reduce((s, v) => s + (parseInt(v.sadhviji_bhagvant) || 0), 0) },
+                ].map((item, i, arr) => (
+                  <div key={i} style={{ flex: '1 1 80px', textAlign: 'center', padding: '8px 10px', borderRight: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                    <div style={{ fontSize: '22px', fontWeight: '700', color: item.color }}>{item.value}</div>
+                    <div style={{ fontSize: '11px', color: '#718096', marginTop: '4px' }}>{item.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
