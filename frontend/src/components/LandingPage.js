@@ -83,27 +83,9 @@ const LandingPage = ({ language, setLanguage }) => {
 
       {/* ── Hero ── */}
       <section className="lp-hero">
-        <div className="lp-hero-inner">
-          {/* Left: logo + text */}
-          <div className="lp-hero-left">
-            <div className="lp-tagline">{t.tagline}</div>
-            <img src="/images/logo_vsg.png" alt="VSG Logo" className="lp-hero-logo" />
-            <h1 className="lp-hero-title">{t.title}</h1>
-            <p className="lp-hero-sub">{t.subtitle}</p>
-            <div className="lp-hero-actions">
-              <button className="lp-btn lp-btn-solid lp-btn-lg" onClick={() => navigate('/login')}>
-                {t.login}
-              </button>
-              <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/register')}>
-                {t.register}
-              </button>
-            </div>
-          </div>
-          {/* Right: banner */}
-          <div className="lp-hero-right">
-            <div className="lp-banner-wrap">
-              <img src="/images/banner.jpeg" alt="Vihar Seva Group Banner" className="lp-banner-img" />
-            </div>
+        <div className="lp-hero-banner-only">
+          <div className="lp-banner-wrap">
+            <img src="/images/banner.jpeg" alt="Vihar Seva Group Banner" className="lp-banner-img" />
           </div>
         </div>
       </section>
@@ -139,12 +121,6 @@ const LandingPage = ({ language, setLanguage }) => {
       {/* ── CTA ── */}
       <section className="lp-cta">
         <div className="lp-section-inner lp-cta-inner">
-          <button className="lp-btn lp-btn-solid lp-btn-lg" onClick={() => navigate('/login')}>
-            {t.login}
-          </button>
-          <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/register')}>
-            {t.register}
-          </button>
           <button className="lp-btn lp-btn-blue lp-btn-lg" onClick={() => navigate('/vihar-path-margdarshika')}>
             📍 {t.viharPathGuide}
           </button>
@@ -153,7 +129,7 @@ const LandingPage = ({ language, setLanguage }) => {
 
       {/* ── Footer ── */}
       <footer className="lp-footer">
-        <span>© {new Date().getFullYear()} Vihar Seva Group · {t.tagline}</span>
+        <span>© {new Date().getFullYear()} Vihar Seva Group</span>
       </footer>
 
     </div>
