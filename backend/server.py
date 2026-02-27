@@ -65,30 +65,13 @@ logger = logging.getLogger(__name__)
 
 # MongoDB connection with optimized connection pooling
 # URL encode password if provided via env, otherwise use default with encoded password
-MONGO_USER = os.environ.get("MONGO_USER", "carboncredits")
-MONGO_PASS_RAW = os.environ.get("MONGO_PASS", "Vihar2026")
-MONGO_HOST = os.environ.get("MONGO_HOST", "clustercc.g83djvn.mongodb.net")
-db_name = os.environ.get("DB_NAME", "ClusterCC")
-
-MONGO_PASS = quote_plus(MONGO_PASS_RAW)
-
-mongo_url = (
-    f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@{MONGO_HOST}/{db_name}"
-    f"?retryWrites=true&w=majority&authSource=admin&authMechanism=SCRAM-SHA-256"
+default_mongo_url = (
+    'mongodb+srv://carboncredits:' + quote_plus('uaDFNhYUQTGigzs1') +
+    '@clustercc.g83djvn.mongodb.net/?retryWrites=true&w=majority&appName=ClusterCC'
 )
+mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
+db_name = os.environ.get('DB_NAME', 'ClusterCC')
 
-# default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Vihar2026') + '@clustercc.g83djvn.mongodb.net/?appName=ClusterCC'
-# mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
-# db_name = os.environ.get('DB_NAME', 'ClusterCC')
-
-# Debug: log which URL source is being used (password masked)
-_url_source = "ENV_VAR" if os.environ.get('MONGO_URL') else "HARDCODED_DEFAULT"
-try:
-    from urllib.parse import urlparse
-    _parsed = urlparse(mongo_url)
-    print(f"[MONGO DEBUG] Source: {_url_source} | Host: {_parsed.hostname} | User: {_parsed.username} | DB: {db_name}")
-except Exception:
-    print(f"[MONGO DEBUG] Source: {_url_source} | DB: {db_name}")
 
 # Optimized connection pool settings for high concurrency
 # maxPoolSize: Maximum number of connections in the pool (default: 100)
