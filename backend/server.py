@@ -69,6 +69,15 @@ default_mongo_url = 'mongodb+srv://carboncredits:' + quote_plus('Riaana123') + '
 mongo_url = os.environ.get('MONGO_URL', default_mongo_url)
 db_name = os.environ.get('DB_NAME', 'ClusterCC')
 
+# Debug: log which URL source is being used (password masked)
+_url_source = "ENV_VAR" if os.environ.get('MONGO_URL') else "HARDCODED_DEFAULT"
+try:
+    from urllib.parse import urlparse
+    _parsed = urlparse(mongo_url)
+    print(f"[MONGO DEBUG] Source: {_url_source} | Host: {_parsed.hostname} | User: {_parsed.username} | DB: {db_name}")
+except Exception:
+    print(f"[MONGO DEBUG] Source: {_url_source} | DB: {db_name}")
+
 # Optimized connection pool settings for high concurrency
 # maxPoolSize: Maximum number of connections in the pool (default: 100)
 # minPoolSize: Minimum number of connections to maintain (default: 0)
