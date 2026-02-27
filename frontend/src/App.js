@@ -15,6 +15,7 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ViharPathMargdarshika = lazy(() => import('./components/ViharPathMargdarshika'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -227,6 +228,10 @@ function App() {
                   element={
                     <ViharPathMargdarshika language={language} setLanguage={setLanguage} />
                   }
+                />
+                <Route
+                  path="/privacy"
+                  element={<PrivacyPolicy />}
                 />
               </Routes>
             </Suspense>
