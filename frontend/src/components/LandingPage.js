@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
 
@@ -13,7 +13,7 @@ const translations = {
     convenor2Name: 'Shreyanshbhai Dilipbhai Ramani',
     convenor2Phone: '+91 89050 93881',
     convenor3Title: 'Convenor - Naranpura Vihar Seva Group',
-    convenor3Name: 'Vardhaman Atulbhai Shah',
+    convenor3Name: 'Vardhaman Shah',
     convenor3Phone: '+91 86907 03224',
     convenor4Title: 'Convenor - Naranpura Vihar Seva Group',
     convenor4Name: 'Hardikbhai Shah',
@@ -23,6 +23,7 @@ const translations = {
     register: 'Register',
     ourTeam: 'Our Leadership Team',
     viharPathGuide: 'Vihar Path Margdarshika',
+    tagline: '🙏 Jay Jinendra',
   },
   gu: {
     title: 'વિહાર સેવા ગ્રુપ',
@@ -30,11 +31,11 @@ const translations = {
     convenor1Title: 'કન્વીનર - ઓલ ઇન્ડિયા વિહાર સેવા ગ્રુપ',
     convenor1Name: 'રૂપેશભાઈ શૈલેષભાઈ વોરા',
     convenor1Phone: '+91 89050 93981',
-    convenor2Title: 'કન્વીનર - ગુજરાત વિહાર સેવા ગ્રુપ', 
+    convenor2Title: 'કન્વીનર - ગુજરાત વિહાર સેવા ગ્રુપ',
     convenor2Name: 'શ્રેયાંસભાઈ દિલીપભાઈ રામાણી',
     convenor2Phone: '+91 89050 93881',
     convenor3Title: 'કન્વીનર - નારણપુરા વિહાર સેવા ગ્રુપ',
-    convenor3Name: 'વર્ધમાન અતુલભાઇ શાહ',
+    convenor3Name: 'વર્ધમાન શાહ',
     convenor3Phone: '+91 86907 03224',
     convenor4Title: 'કન્વીનર - નારણપુરા વિહાર સેવા ગ્રુપ',
     convenor4Name: 'હાર્દિકભાઈ શાહ',
@@ -44,142 +45,117 @@ const translations = {
     register: 'રજીસ્ટર',
     ourTeam: 'અમારી લીડરશિપ ટીમ',
     viharPathGuide: 'વિહાર પથ માર્ગદર્શિકા',
+    tagline: '🙏 જય જિનેન્દ્ર',
   },
 };
+
+const convenors = [
+  { image: '/images/Rupeshbhai_vora.jpeg',      key: '1' },
+  { image: '/images/ShreyanshBhai_ramani.jpeg', key: '2' },
+  { image: '/images/Vardhaman.jpeg',            key: '3' },
+  { image: '/images/Hardikbhai.jpeg',           key: '4' },
+];
 
 const LandingPage = ({ language, setLanguage }) => {
   const t = translations[language];
   const navigate = useNavigate();
 
   return (
-    <div className="landing-page">
-      {/* Header with Language Toggle and Action Buttons */}
-      <header className="landing-header">
-        <div className="landing-header-content">
-          <div className="landing-header-actions">
-            <button 
-              className="btn-header btn-header-primary"
-              onClick={() => navigate('/login')}
-            >
+    <div className="lp-page">
+
+      {/* ── Navbar ── */}
+      <header className="lp-header">
+        <div className="lp-header-inner">
+          <div className="lp-brand">
+            <img src="/images/logo_vsg.png" alt="VSG Logo" className="lp-brand-logo" />
+            <span className="lp-brand-name">{t.title}</span>
+          </div>
+          <div className="lp-header-btns">
+            <button className="lp-btn lp-btn-outline" onClick={() => navigate('/login')}>
               {t.login}
             </button>
-            <button 
-              className="btn-header btn-header-secondary"
-              onClick={() => navigate('/register')}
-            >
+            <button className="lp-btn lp-btn-solid" onClick={() => navigate('/register')}>
               {t.register}
             </button>
-            {/* Gujarati Language Toggle Button - Hidden/Commented Out */}
-            {/* <button 
-              className="landing-language-toggle-btn"
-              onClick={() => setLanguage(language === 'en' ? 'gu' : 'en')}
-            >
-              {language === 'en' ? 'ગુજરાતી' : 'English'}
-            </button> */}
           </div>
         </div>
       </header>
 
-      {/* Hero Section with Logo and Banner */}
-      <section className="landing-hero">
-        <div className="landing-hero-container">
-          <div className="landing-hero-content">
-            <div className="landing-logo-section">
-              <img src="/images/logo_vsg.png" alt="VSG Logo" className="landing-logo" />
-            </div>
-            <div className="landing-title-group">
-              <h1 className="landing-title">{t.title}</h1>
-              <p className="landing-subtitle">{t.subtitle}</p>
-            </div>
-          </div>
-          <div className="landing-banner-section">
-            <img src="/images/banner.jpeg" alt="Vihar Seva Group Banner" className="landing-banner-image" />
-          </div>
-        </div>
-      </section>
-
-      {/* Convenors Section */}
-      <section className="landing-convenors-section">
-        <div className="landing-section-container">
-          <h2 className="landing-section-title">{t.ourTeam}</h2>
-          
-          {/* Top Two Convenors */}
-          <div className="convenors-grid">
-            <div className="convenor-card">
-              <div className="convenor-image-wrapper">
-                <img src="/images/Rupeshbhai_vora.jpeg" alt={t.convenor1Name} className="convenor-image" />
-              </div>
-              <div className="convenor-info">
-                <div className="convenor-title">{t.convenor1Title}</div>
-                <div className="convenor-name">{t.convenor1Name}</div>
-                <div className="convenor-phone">{t.convenor1Phone}</div>
-              </div>
-            </div>
-
-            <div className="convenor-card">
-              <div className="convenor-image-wrapper">
-                <img src="/images/ShreyanshBhai_ramani.jpeg" alt={t.convenor2Name} className="convenor-image" />
-              </div>
-              <div className="convenor-info">
-                <div className="convenor-title">{t.convenor2Title}</div>
-                <div className="convenor-name">{t.convenor2Name}</div>
-                <div className="convenor-phone">{t.convenor2Phone}</div>
-              </div>
+      {/* ── Hero ── */}
+      <section className="lp-hero">
+        <div className="lp-hero-inner">
+          {/* Left: logo + text */}
+          <div className="lp-hero-left">
+            <div className="lp-tagline">{t.tagline}</div>
+            <img src="/images/logo_vsg.png" alt="VSG Logo" className="lp-hero-logo" />
+            <h1 className="lp-hero-title">{t.title}</h1>
+            <p className="lp-hero-sub">{t.subtitle}</p>
+            <div className="lp-hero-actions">
+              <button className="lp-btn lp-btn-solid lp-btn-lg" onClick={() => navigate('/login')}>
+                {t.login}
+              </button>
+              <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/register')}>
+                {t.register}
+              </button>
             </div>
           </div>
-
-          {/* Middle Two Convenors */}
-          <div className="convenors-grid">
-            <div className="convenor-card">
-              <div className="convenor-image-wrapper">
-                <img src="/images/Vardhaman.jpeg" alt={t.convenor3Name} className="convenor-image" />
-              </div>
-              <div className="convenor-info">
-                <div className="convenor-title">{t.convenor3Title}</div>
-                <div className="convenor-name">{t.convenor3Name}</div>
-                <div className="convenor-phone">{t.convenor3Phone}</div>
-              </div>
-            </div>
-
-            <div className="convenor-card">
-              <div className="convenor-image-wrapper">
-                <img src="/images/Hardikbhai.jpeg" alt={t.convenor4Name} className="convenor-image" />
-              </div>
-              <div className="convenor-info">
-                <div className="convenor-title">{t.convenor4Title}</div>
-                <div className="convenor-name">{t.convenor4Name}</div>
-                <div className="convenor-phone">{t.convenor4Phone}</div>
-              </div>
+          {/* Right: banner */}
+          <div className="lp-hero-right">
+            <div className="lp-banner-wrap">
+              <img src="/images/banner.jpeg" alt="Vihar Seva Group Banner" className="lp-banner-img" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="landing-cta-section">
-        <div className="landing-section-container">
-          <div className="landing-actions">
-            <button 
-              className="btn-landing btn-primary-landing" 
-              onClick={() => navigate('/login')}
-            >
-              {t.login}
-            </button>
-            <button 
-              className="btn-landing btn-secondary-landing" 
-              onClick={() => navigate('/register')}
-            >
-              {t.register}
-            </button>
-            <button 
-              className="btn-landing btn-tertiary-landing" 
-              onClick={() => navigate('/vihar-path-margdarshika')}
-            >
-              📍 {t.viharPathGuide}
-            </button>
+      {/* ── Leadership Team ── */}
+      <section className="lp-team">
+        <div className="lp-section-inner">
+          <div className="lp-section-header">
+            <h2 className="lp-section-title">{t.ourTeam}</h2>
+            <div className="lp-section-line" />
+          </div>
+
+          <div className="lp-team-grid">
+            {convenors.map(({ image, key }) => (
+              <div className="lp-card" key={key}>
+                <div className="lp-card-top-bar" />
+                <div className="lp-avatar-wrap">
+                  <img src={image} alt={t[`convenor${key}Name`]} className="lp-avatar" />
+                </div>
+                <div className="lp-card-body">
+                  <p className="lp-card-role">{t[`convenor${key}Title`]}</p>
+                  <h3 className="lp-card-name">{t[`convenor${key}Name`]}</h3>
+                  <a className="lp-card-phone" href={`tel:${t[`convenor${key}Phone`]}`}>
+                    📞 {t[`convenor${key}Phone`]}
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* ── CTA ── */}
+      <section className="lp-cta">
+        <div className="lp-section-inner lp-cta-inner">
+          <button className="lp-btn lp-btn-solid lp-btn-lg" onClick={() => navigate('/login')}>
+            {t.login}
+          </button>
+          <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => navigate('/register')}>
+            {t.register}
+          </button>
+          <button className="lp-btn lp-btn-blue lp-btn-lg" onClick={() => navigate('/vihar-path-margdarshika')}>
+            📍 {t.viharPathGuide}
+          </button>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="lp-footer">
+        <span>© {new Date().getFullYear()} Vihar Seva Group · {t.tagline}</span>
+      </footer>
+
     </div>
   );
 };
