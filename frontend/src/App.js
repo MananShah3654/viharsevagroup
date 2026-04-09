@@ -16,6 +16,7 @@ const UserDashboard = lazy(() => import('./components/UserDashboard'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const ViharPathMargdarshika = lazy(() => import('./components/ViharPathMargdarshika'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const ChildSafety = lazy(() => import('./components/ChildSafety'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -232,6 +233,10 @@ function App() {
                 <Route
                   path="/privacy"
                   element={<PrivacyPolicy />}
+                />
+                <Route
+                  path="/child-safety"
+                  element={<ChildSafety />}
                 />
               </Routes>
             </Suspense>

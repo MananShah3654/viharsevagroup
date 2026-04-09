@@ -81,3 +81,5 @@ android-sdk/ -e
 # Environment files
 *.env
 *.env.*
+backend/test.py
+.claude/settings.local.json
