@@ -105,6 +105,14 @@ const translations = {
     calculateDistance: 'Calculate',
     calculating: 'Calculating...',
     calculateDistanceHint: 'Enter both locations and click Calculate to auto-fill distance',
+    splitRoute: 'Split into multiple parts',
+    splitRouteHint: 'Use this when a vihar is too long to do in one go and needs to be done in smaller parts. Each part will be saved as a separate vihar.',
+    leg: 'Stage',
+    addLeg: 'Add Stage',
+    removeLeg: 'Remove',
+    totalKmsLabel: 'Total',
+    viharsCreated: '{n} vihars created successfully!',
+    legCreateFailed: 'Failed to create stage {n}',
     home: 'Home',
     totalUsers: 'Total Users',
     totalVihars: 'Total Vihars',
@@ -233,6 +241,14 @@ const translations = {
     calculateDistance: 'ગણતરી કરો',
     calculating: 'ગણતરી કરી રહ્યા છીએ...',
     calculateDistanceHint: 'બંને સ્થાન દાખલ કરો અને રોડ અંતર મેળવવા માટે ગણતરી કરો પર ક્લિક કરો ',
+    splitRoute: 'એક કરતા વધારે ભાગમાં વિભાજિત કરો',
+    splitRouteHint: 'જ્યારે વિહાર એક સાથે કરવા માટે ખૂબ લાંબો હોય અને નાના ભાગોમાં કરવાની જરૂર હોય ત્યારે વાપરો. દરેક ભાગ અલગ વિહાર તરીકે સાચવાશે.',
+    leg: 'તબક્કો',
+    addLeg: 'તબક્કો ઉમેરો',
+    removeLeg: 'દૂર કરો',
+    totalKmsLabel: 'કુલ',
+    viharsCreated: '{n} વિહારો સફળતાપૂર્વક બનાવ્યા!',
+    legCreateFailed: 'તબક્કો {n} બનાવવામાં નિષ્ફળ',
     home: 'હોમ',
     totalUsers: 'કુલ યુઝર્સ',
     totalVihars: 'કુલ વિહારો',
@@ -306,6 +322,11 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     to_upashray: '',
     approx_kms: '',
   });
+
+  const makeEmptyLeg = () => ({ from_upashray: '', to_upashray: '', approx_kms: '', vihar_date: '', vihar_time: '' });
+  const [splitMode, setSplitMode] = useState(false);
+  const [legs, setLegs] = useState([makeEmptyLeg(), makeEmptyLeg()]);
+  const [legCalcLoadingIndex, setLegCalcLoadingIndex] = useState(-1);
 
   // User form
   const [userForm, setUserForm] = useState({
@@ -855,6 +876,67 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
     }
   };
 
+  const updateLeg = (index, patch) => {
+    setLegs(prev => {
+      const next = prev.map((leg, i) => (i === index ? { ...leg, ...patch } : leg));
+      if (patch.to_upashray !== undefined && index + 1 < next.length) {
+        const oldTo = prev[index].to_upashray || '';
+        const nextLegFrom = next[index + 1].from_upashray || '';
+        if (nextLegFrom === '' || nextLegFrom === oldTo) {
+          next[index + 1] = { ...next[index + 1], from_upashray: patch.to_upashray };
+        }
+      }
+      if (patch.vihar_date !== undefined && index === 0) {
+        const oldDate = prev[0].vihar_date || '';
+        for (let i = 1; i < next.length; i++) {
+          const cur = next[i].vihar_date || '';
+          if (cur === '' || cur === oldDate) {
+            next[i] = { ...next[i], vihar_date: patch.vihar_date };
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const addLeg = () => {
+    setLegs(prev => {
+      const last = prev[prev.length - 1];
+      const newLeg = makeEmptyLeg();
+      if (last) newLeg.from_upashray = last.to_upashray || '';
+      if (prev[0]?.vihar_date) newLeg.vihar_date = prev[0].vihar_date;
+      return [...prev, newLeg];
+    });
+  };
+
+  const removeLeg = (index) => {
+    setLegs(prev => (prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)));
+  };
+
+  const handleCalculateLegDistance = async (index) => {
+    const leg = legs[index];
+    if (!leg.from_upashray || !leg.to_upashray) {
+      toast.error('Please enter both "From" and "To" for this stage');
+      return;
+    }
+    setLegCalcLoadingIndex(index);
+    try {
+      const distance = await calculateRoadDistance(leg.from_upashray, leg.to_upashray);
+      if (distance === null || distance === undefined) {
+        toast.error('Could not calculate distance. Please check the location names and try again.');
+        return;
+      }
+      const rounded = Math.round(distance * 10) / 10;
+      updateLeg(index, { approx_kms: rounded.toString() });
+      toast.success(`Stage ${index + 1}: ${rounded} km`);
+    } catch (error) {
+      console.error('Leg distance calc error:', error);
+      toast.error('Failed to calculate distance.');
+    } finally {
+      setLegCalcLoadingIndex(-1);
+    }
+  };
+
   // Get day of week in Gujarati
   const getGujaratiDay = (dateString) => {
     const date = new Date(dateString);
@@ -1045,9 +1127,71 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       to_upashray: '',
       approx_kms: '',
     });
+    setSplitMode(false);
+    setLegs([makeEmptyLeg(), makeEmptyLeg()]);
+    setLegCalcLoadingIndex(-1);
   };
 
   const handleCreateVihar = async () => {
+    if (splitMode) {
+      for (let i = 0; i < legs.length; i++) {
+        const leg = legs[i];
+        const label = `${t.leg} ${i + 1}`;
+        if (!leg.from_upashray.trim()) { toast.error(`${label}: ${language === 'gu' ? 'શરૂ થવાનું સ્થળ જરૂરી છે' : 'Starting point is required'}`); return; }
+        if (!leg.to_upashray.trim())   { toast.error(`${label}: ${language === 'gu' ? 'અંત સ્થળ જરૂરી છે' : 'Ending point is required'}`); return; }
+        if (!leg.vihar_date)           { toast.error(`${label}: ${language === 'gu' ? 'વિહાર તારીખ જરૂરી છે' : 'Vihar date is required'}`); return; }
+        if (!leg.vihar_time)           { toast.error(`${label}: ${language === 'gu' ? 'વિહાર સમય જરૂરી છે' : 'Vihar time is required'}`); return; }
+      }
+      setLoading(true);
+      const sharedFields = {
+        sahebji_name: viharForm.sahebji_name,
+        sadhu_bhagvant: parseInt(viharForm.sadhu_bhagvant) || 0,
+        sadhviji_bhagvant: parseInt(viharForm.sadhviji_bhagvant) || 0,
+        mumukshu: parseInt(viharForm.mumukshu) || 0,
+        wheelchair: parseInt(viharForm.wheelchair) || 0,
+        self: viharForm.self,
+        luggage: viharForm.luggage,
+        dori: viharForm.dori,
+        car_required: viharForm.car_required,
+        activa: viharForm.activa,
+      };
+      let createdCount = 0;
+      try {
+        for (let i = 0; i < legs.length; i++) {
+          const leg = legs[i];
+          const payload = {
+            ...sharedFields,
+            from_upashray: leg.from_upashray,
+            to_upashray: leg.to_upashray,
+            approx_kms: parseFloat(leg.approx_kms) || 0,
+            vihar_date: leg.vihar_date,
+            vihar_time: leg.vihar_time,
+          };
+          try {
+            await axiosInstance.post('/vihars', payload);
+            createdCount += 1;
+          } catch (err) {
+            const status = err.response?.status;
+            if (status && status >= 400 && status < 500) {
+              toast.error(`${t.legCreateFailed.replace('{n}', i + 1)}: ${err.response?.data?.detail || ''}`);
+              break;
+            }
+            createdCount += 1;
+          }
+        }
+        if (createdCount > 0) {
+          toast.success(t.viharsCreated.replace('{n}', createdCount));
+          setShowCreateVihar(false);
+          resetViharForm();
+          setDataLoaded(prev => ({ ...prev, vihars: false }));
+          fetchVihars();
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!viharForm.from_upashray.trim()) { toast.error(language === 'gu' ? 'શરૂ થવાનું સ્થળ જરૂરી છે' : 'Starting point is required'); return; }
     if (!viharForm.to_upashray.trim())   { toast.error(language === 'gu' ? 'અંત સ્થળ જરૂરી છે' : 'Ending point is required'); return; }
     if (!viharForm.vihar_date)           { toast.error(language === 'gu' ? 'વિહાર તારીખ જરૂરી છે' : 'Vihar date is required'); return; }
@@ -1062,7 +1206,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
         wheelchair: parseInt(viharForm.wheelchair) || 0,
         approx_kms: parseFloat(viharForm.approx_kms) || 0,
       });
-      
+
       // Check if response is successful (200 or 201)
       if (response.status === 200 || response.status === 201 || response.data) {
         toast.success(t.viharCreated);
@@ -1112,6 +1256,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
       to_upashray: vihar.to_upashray || '',
       approx_kms: vihar.approx_kms || '',
     });
+    setSplitMode(false);
     setShowCreateVihar(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -1672,7 +1817,31 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
 
                   {/* Scrollable Body */}
                   <div className="vihar-form-modal-body">
+                    {!editingViharId && (
+                      <div style={{
+                        background: splitMode ? '#eef7ee' : '#f8f9fa',
+                        border: `1px solid ${splitMode ? '#7FA588' : '#e0e0e0'}`,
+                        borderRadius: '8px',
+                        padding: '12px 14px',
+                        marginBottom: '15px'
+                      }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={splitMode}
+                            onChange={(e) => setSplitMode(e.target.checked)}
+                            data-testid="split-route-toggle"
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                          />
+                          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.splitRoute}</span>
+                        </label>
+                        <small style={{ color: '#666', fontSize: '0.82rem', display: 'block', marginTop: '6px', lineHeight: 1.4 }}>
+                          {t.splitRouteHint}
+                        </small>
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.routeNo}</label>
                         <input
@@ -1682,6 +1851,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           data-testid="route-no-input"
                         />
                       </div>
+                      )}
                       <div className="form-group">
                         <label>{t.sahebjiName}</label>
                         <input
@@ -1691,6 +1861,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           data-testid="sahebji-name-input"
                         />
                       </div>
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.viharDate} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
@@ -1702,6 +1873,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           style={!viharForm.vihar_date ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
+                      )}
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.viharTime} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
@@ -1713,6 +1886,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           style={!viharForm.vihar_time ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
+                      )}
                       <div className="form-group">
                         <label>{t.sadhuBhagvant}</label>
                         <input
@@ -1740,6 +1914,7 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           data-testid="mumukshu-count-input"
                         />
                       </div>
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.fromUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
@@ -1751,6 +1926,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           style={!viharForm.from_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
+                      )}
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.toUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
                         <input
@@ -1762,6 +1939,8 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           style={!viharForm.to_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
                         />
                       </div>
+                      )}
+                      {!splitMode && (
                       <div className="form-group">
                         <label>{t.approxKms}</label>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1799,7 +1978,150 @@ const AdminDashboard = ({ user, onLogout, language, setLanguage }) => {
                           {t.calculateDistanceHint}
                         </small>
                       </div>
+                      )}
                     </div>
+
+                    {splitMode && !editingViharId && (
+                      <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {legs.map((leg, index) => {
+                          const calcBusy = legCalcLoadingIndex === index;
+                          const canCalc = leg.from_upashray && leg.to_upashray && !calcBusy && !loading;
+                          return (
+                            <div
+                              key={index}
+                              data-testid={`leg-card-${index}`}
+                              style={{
+                                border: '1px solid #d0d7d3',
+                                background: '#fcfdfc',
+                                borderRadius: '10px',
+                                padding: '14px'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <strong style={{ color: '#3d5a44', fontSize: '0.95rem' }}>
+                                  {t.leg} {index + 1}
+                                </strong>
+                                {legs.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeLeg(index)}
+                                    data-testid={`leg-remove-${index}`}
+                                    style={{
+                                      background: 'transparent',
+                                      border: '1px solid #e53e3e',
+                                      color: '#e53e3e',
+                                      padding: '4px 10px',
+                                      borderRadius: '5px',
+                                      fontSize: '12px',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {t.removeLeg}
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                                <div className="form-group">
+                                  <label>{t.fromUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
+                                  <input
+                                    type="text"
+                                    value={leg.from_upashray}
+                                    onChange={(e) => updateLeg(index, { from_upashray: e.target.value })}
+                                    data-testid={`leg-${index}-from`}
+                                    style={!leg.from_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label>{t.toUpashray} <span style={{color:'#e53e3e'}}>*</span></label>
+                                  <input
+                                    type="text"
+                                    value={leg.to_upashray}
+                                    onChange={(e) => updateLeg(index, { to_upashray: e.target.value })}
+                                    data-testid={`leg-${index}-to`}
+                                    style={!leg.to_upashray.trim() ? { borderColor: '#e53e3e' } : {}}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label>{t.viharDate} <span style={{color:'#e53e3e'}}>*</span></label>
+                                  <input
+                                    type="date"
+                                    value={leg.vihar_date}
+                                    onChange={(e) => updateLeg(index, { vihar_date: e.target.value })}
+                                    data-testid={`leg-${index}-date`}
+                                    style={!leg.vihar_date ? { borderColor: '#e53e3e' } : {}}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label>{t.viharTime} <span style={{color:'#e53e3e'}}>*</span></label>
+                                  <input
+                                    type="time"
+                                    value={leg.vihar_time}
+                                    onChange={(e) => updateLeg(index, { vihar_time: e.target.value })}
+                                    data-testid={`leg-${index}-time`}
+                                    style={!leg.vihar_time ? { borderColor: '#e53e3e' } : {}}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label>{t.approxKms}</label>
+                                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={leg.approx_kms}
+                                      onChange={(e) => updateLeg(index, { approx_kms: e.target.value })}
+                                      data-testid={`leg-${index}-kms`}
+                                      style={{ flex: 1 }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCalculateLegDistance(index)}
+                                      disabled={!canCalc}
+                                      data-testid={`leg-${index}-calc`}
+                                      style={{
+                                        padding: '8px 12px',
+                                        background: '#7FA588',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: canCalc ? 'pointer' : 'not-allowed',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        whiteSpace: 'nowrap',
+                                        opacity: canCalc ? 1 : 0.6
+                                      }}
+                                    >
+                                      {calcBusy ? t.calculating : t.calculateDistance}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={addLeg}
+                            data-testid="add-leg-btn"
+                            style={{
+                              padding: '8px 16px',
+                              background: '#fff',
+                              color: '#3d5a44',
+                              border: '1px dashed #7FA588',
+                              borderRadius: '6px',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + {t.addLeg}
+                          </button>
+                          <small style={{ color: '#555', fontSize: '0.85rem' }}>
+                            {t.totalKmsLabel}: {legs.reduce((s, l) => s + (parseFloat(l.approx_kms) || 0), 0).toFixed(1)} km
+                          </small>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Wheelchair + Checkboxes */}
                     <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
