@@ -27,6 +27,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.drawing.image import Image as ExcelImage
 from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import time
@@ -1349,6 +1350,67 @@ async def get_report_summary(period: str, user_id: str = None, current_user: dic
     return result
 
 # Report Downloads
+# Register Unicode fonts (Gujarati support) for PDF reports once, then cache.
+_REPORT_FONTS = None
+
+
+def _register_report_fonts():
+    """Register a Unicode font that supports Gujarati for PDF reports.
+
+    Returns (regular_font_name, bold_font_name). Prefers the font bundled in
+    the repo (so it works on Linux/production too), then falls back to common
+    system fonts that cover Gujarati, then to Helvetica as a last resort.
+    """
+    global _REPORT_FONTS
+    if _REPORT_FONTS is not None:
+        return _REPORT_FONTS
+
+    regular, bold = 'Helvetica', 'Helvetica-Bold'
+    bundled = ROOT_DIR / "fonts"
+
+    # Must cover BOTH Latin/digits AND Gujarati in a single font, otherwise the
+    # numeric columns (dates, route no, kms) or the names disappear.
+    # (path, subfontIndex) - subfontIndex is only needed for .ttc collections
+    regular_candidates = [
+        (str(bundled / "HindVadodara-Regular.ttf"), None),   # bundled (portable, Latin+Gujarati)
+        ('C:/Windows/Fonts/arialuni.ttf', None),             # Arial Unicode MS (Latin+Gujarati)
+        ('C:/Windows/Fonts/Nirmala.ttc', 0),                 # Nirmala UI (Latin+Indic)
+    ]
+    for path, idx in regular_candidates:
+        if os.path.exists(path):
+            try:
+                if idx is None:
+                    pdfmetrics.registerFont(TTFont('GujaratiFont', path))
+                else:
+                    pdfmetrics.registerFont(TTFont('GujaratiFont', path, subfontIndex=idx))
+                regular = 'GujaratiFont'
+                logger.info(f"Registered Gujarati report font: {path}")
+                break
+            except Exception as e:
+                logger.warning(f"Could not register font {path}: {str(e)}")
+
+    if regular == 'GujaratiFont':
+        bold = regular  # fall back to regular face if no bold is found
+        bold_candidates = [
+            str(bundled / "HindVadodara-SemiBold.ttf"),
+            'C:/Windows/Fonts/NirmalaB.ttf',
+        ]
+        for path in bold_candidates:
+            if os.path.exists(path):
+                try:
+                    pdfmetrics.registerFont(TTFont('GujaratiFont-Bold', path))
+                    bold = 'GujaratiFont-Bold'
+                    logger.info(f"Registered Gujarati bold report font: {path}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Could not register bold font {path}: {str(e)}")
+    else:
+        logger.warning("No Unicode font found - Gujarati text may not render in PDF reports.")
+
+    _REPORT_FONTS = (regular, bold)
+    return _REPORT_FONTS
+
+
 @api_router.get("/reports/download/pdf")
 async def download_pdf_report(period: str, user_id: str = None, current_user: dict = Depends(get_current_user)):
     """Download PDF report. Admin can download user-wise reports."""
@@ -1410,7 +1472,12 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
                            topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     styles = getSampleStyleSheet()
-    
+
+    # Register a Unicode font so Gujarati text (names, upashray, titles) renders
+    base_font, bold_font = _register_report_fonts()
+    gu_title_style = ParagraphStyle('GuTitle', parent=styles['Title'], fontName=bold_font)
+    gu_normal_style = ParagraphStyle('GuNormal', parent=styles['Normal'], fontName=base_font, fontSize=9, leading=11)
+
     # Add VSG Logo - reduced size to save space
     logo_path = ROOT_DIR.parent / "frontend" / "public" / "images" / "logo_vsg.jpg"
     if logo_path.exists():
@@ -1423,7 +1490,7 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
             logger.warning(f"Could not add logo to PDF: {str(e)}")
     
     # Title
-    title = Paragraph(report_title, styles['Title'])
+    title = Paragraph(report_title, gu_title_style)
     elements.append(title)
     elements.append(Spacer(1, 0.3 * inch))
     
@@ -1435,8 +1502,8 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
     elements.append(date_info)
     elements.append(Spacer(1, 0.2 * inch))
     
-    # Table data - add Vihar Sevak and Thana columns
-    data = [['Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']]
+    # Table data - add sequential No., Vihar Sevak and Thana columns
+    data = [['No.', 'Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']]
     
     # Initialize participants map
     vihar_participants_map = {}
@@ -1460,65 +1527,82 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
                 participant_name = user.get("name", user.get("phone", "Unknown"))
                 vihar_participants_map[v_id].append(participant_name)
     
-    for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):
+    # Sort by date ascending (earliest first), then by creation time so numbering is stable
+    sorted_vihars = sorted(
+        vihars,
+        key=lambda x: (x.get('vihar_date', '') or '', x.get('created_at', '') or x.get('route_no', '') or '')
+    )
+    for serial_no, vihar in enumerate(sorted_vihars, start=1):
         # Get user name(s)
         if current_user.get("role") == "admin" and not user_id:
             # Show all participants for this vihar - each on a new line
             participants = vihar_participants_map.get(vihar["id"], [])
             if participants:
                 # Create Paragraph with line breaks for PDF
-                user_name_para = Paragraph("<br/>".join(participants), styles['Normal'])
+                user_name_para = Paragraph("<br/>".join(participants), gu_normal_style)
             else:
-                user_name_para = Paragraph("No participants", styles['Normal'])
+                user_name_para = Paragraph("No participants", gu_normal_style)
         elif user_id:
             # Show the specific user name from user_info
             user_name_val = user_info.get("name", user_info.get("phone", "User")) if user_info else "User"
-            user_name_para = Paragraph(user_name_val, styles['Normal'])
+            user_name_para = Paragraph(user_name_val, gu_normal_style)
         else:
             # For regular users, show their own name
             user_name_val = current_user.get("name", current_user.get("phone", "User"))
-            user_name_para = Paragraph(user_name_val, styles['Normal'])
+            user_name_para = Paragraph(user_name_val, gu_normal_style)
         
         # Calculate Thana (sadhu + sadhviji count)
         thana_count = vihar.get('sadhu_bhagvant', 0) + vihar.get('sadhviji_bhagvant', 0)
-        
+
+        # From -> To as a Paragraph so Gujarati place names render in the Unicode
+        # font while the arrow (which Gujarati fonts lack) renders in Helvetica.
+        from_to_para = Paragraph(
+            f'{xml_escape(vihar.get("from_upashray", "") or "")} '
+            f'<font name="Helvetica">&#8594;</font> '
+            f'{xml_escape(vihar.get("to_upashray", "") or "")}',
+            gu_normal_style
+        )
+
         data.append([
+            str(serial_no),
             vihar.get('vihar_date', 'N/A'),
             vihar.get('route_no', 'N/A'),
             user_name_para,
             str(thana_count),
-            f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}",
+            from_to_para,
             str(vihar.get('approx_kms', 0))
         ])
-    
+
     # Add total row - both TOTAL THANA and TOTAL KMs in same row
-    # TOTAL THANA: in column 3 (Vihar Sevak), count in column 4 (Thana)
-    # TOTAL KMs: in columns 5-6
-    data.append(['', '', 'TOTAL THANA:', str(total_thana), 'TOTAL KMs:', f"{total_kms:.2f}"])
+    # TOTAL THANA: in column 4 (Vihar Sevak), count in column 5 (Thana)
+    # TOTAL KMs: in columns 6-7
+    data.append(['', '', '', 'TOTAL THANA:', str(total_thana), 'TOTAL KMs:', f"{total_kms:.2f}"])
     
     # Create table - adjust column widths to fit page with margins
     # A4 width: 8.27 inch, with 0.5 inch margins on each side = 7.27 inch available
-    # Column widths: Date, Route No, Vihar Sevak, Thana, From → To, KMs
-    table = Table(data, colWidths=[1.0*inch, 0.9*inch, 1.3*inch, 0.7*inch, 2.3*inch, 0.8*inch])
+    # Column widths: No., Date, Route No, Vihar Sevak, Thana, From → To, KMs
+    table = Table(data, colWidths=[0.45*inch, 0.9*inch, 0.8*inch, 1.3*inch, 0.6*inch, 2.4*inch, 0.75*inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7FA588')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (2, 1), (2, -2), 'LEFT'),  # Vihar Sevak column - left align
-        ('VALIGN', (2, 1), (2, -2), 'TOP'),  # Vihar Sevak column - top align for multi-line
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # No. column - center align
+        ('ALIGN', (3, 1), (3, -2), 'LEFT'),  # Vihar Sevak column - left align
+        ('VALIGN', (3, 1), (3, -2), 'TOP'),  # Vihar Sevak column - top align for multi-line
         ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 1), (-1, -2), base_font),  # Data rows - Gujarati-capable font
         ('FONTSIZE', (0, 0), (-1, 0), 10),  # Reduced from 12 to 10 for better fit
         ('FONTSIZE', (0, 1), (-1, -2), 9),  # Smaller font for data rows
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('TOPPADDING', (2, 1), (2, -2), 6),  # Extra padding for Vihar Sevak column
-        ('BOTTOMPADDING', (2, 1), (2, -2), 6),  # Extra padding for Vihar Sevak column
+        ('TOPPADDING', (3, 1), (3, -2), 6),  # Extra padding for Vihar Sevak column
+        ('BOTTOMPADDING', (3, 1), (3, -2), 6),  # Extra padding for Vihar Sevak column
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#F5F1E8')),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        # Align TOTAL THANA label (column 3, last row) to left
-        ('ALIGN', (2, -1), (2, -1), 'LEFT'),
-        # Align TOTAL THANA value (column 4, last row) to center
-        ('ALIGN', (3, -1), (3, -1), 'CENTER'),
+        # Align TOTAL THANA label (column 4, last row) to left
+        ('ALIGN', (3, -1), (3, -1), 'LEFT'),
+        # Align TOTAL THANA value (column 5, last row) to center
+        ('ALIGN', (4, -1), (4, -1), 'CENTER'),
         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
         ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#FDFBF7')]),  # Exclude last row (total row)
     ]))
@@ -1542,6 +1626,11 @@ async def download_pdf_report(period: str, user_id: str = None, current_user: di
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+# Font used in Excel reports so Gujarati text renders (Nirmala UI ships with
+# Windows and covers Gujarati + Latin; readers without it fall back gracefully).
+EXCEL_UNICODE_FONT = 'Nirmala UI'
+
 
 @api_router.get("/reports/download/excel")
 async def download_excel_report(period: str, user_id: str = None, current_user: dict = Depends(get_current_user)):
@@ -1616,44 +1705,44 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
             # Adjust row height and column width for logo
             ws.row_dimensions[1].height = 100
             ws.column_dimensions['A'].width = 20
-            # Title starts from column D (logo in A, title spans D to F for 6 columns)
-            ws.merge_cells('D1:F1')
+            # Title starts from column D (logo in A, title spans D to G for 7 columns)
+            ws.merge_cells('D1:G1')
             title_cell = ws['D1']
         except Exception as e:
             logger.warning(f"Could not add logo to Excel: {str(e)}")
             logo_exists = False
-            ws.merge_cells('A1:F1')
+            ws.merge_cells('A1:G1')
             title_cell = ws['A1']
             ws.row_dimensions[1].height = 30
     else:
-        ws.merge_cells('A1:F1')
+        ws.merge_cells('A1:G1')
         title_cell = ws['A1']
         ws.row_dimensions[1].height = 30
     
     # Title
     title_cell.value = report_title
-    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.font = Font(name=EXCEL_UNICODE_FONT, size=16, bold=True, color="FFFFFF")
     title_cell.fill = PatternFill(start_color="7FA588", end_color="7FA588", fill_type="solid")
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
     
     # Date range
     if logo_exists:
-        ws.merge_cells('D2:F2')
+        ws.merge_cells('D2:G2')
         date_cell = ws['D2']
     else:
-        ws.merge_cells('A2:F2')
+        ws.merge_cells('A2:G2')
         date_cell = ws['A2']
     date_cell.value = f"Report Period: {start_date.strftime('%d %b %Y')} to {now.strftime('%d %b %Y')}"
     date_cell.alignment = Alignment(horizontal="center")
     ws.row_dimensions[2].height = 20
     
-    # Headers - add Vihar Sevak and Thana columns
-    headers = ['Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']
+    # Headers - add sequential No., Vihar Sevak and Thana columns
+    headers = ['No.', 'Date', 'Route No', 'Vihar Sevak', 'Thana', 'From → To', 'KMs']
     start_col = 1 if not (logo_path.exists()) else 1  # Start from column 1, but adjust if logo exists
     for col, header in enumerate(headers, start_col):
         cell = ws.cell(row=4, column=col)
         cell.value = header
-        cell.font = Font(bold=True, color="FFFFFF")
+        cell.font = Font(name=EXCEL_UNICODE_FONT, bold=True, color="FFFFFF")
         cell.fill = PatternFill(start_color="7FA588", end_color="7FA588", fill_type="solid")
         cell.alignment = Alignment(horizontal="center", vertical="center")
     
@@ -1680,8 +1769,13 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
                 vihar_participants_map[v_id].append(user_name_val)
     
     # Data rows
+    # Sort by date ascending (earliest first), then by creation time so numbering is stable
+    sorted_vihars = sorted(
+        vihars,
+        key=lambda x: (x.get('vihar_date', '') or '', x.get('created_at', '') or x.get('route_no', '') or '')
+    )
     row = 5
-    for vihar in sorted(vihars, key=lambda x: x.get('vihar_date', '')):
+    for serial_no, vihar in enumerate(sorted_vihars, start=1):
         # Get user name(s)
         if current_user.get("role") == "admin" and not user_id:
             # Show all participants for this vihar - each on a new line
@@ -1701,9 +1795,16 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
         # Calculate Thana (sadhu + sadhviji count)
         thana_count = vihar.get('sadhu_bhagvant', 0) + vihar.get('sadhviji_bhagvant', 0)
         
-        ws.cell(row=row, column=1, value=vihar.get('vihar_date', 'N/A'))
-        ws.cell(row=row, column=2, value=vihar.get('route_no', 'N/A'))
-        user_name_cell = ws.cell(row=row, column=3, value=user_name_str)
+        unicode_font = Font(name=EXCEL_UNICODE_FONT)
+        no_cell = ws.cell(row=row, column=1, value=serial_no)
+        no_cell.font = unicode_font
+        no_cell.alignment = Alignment(horizontal="center", vertical="top")
+        date_cell = ws.cell(row=row, column=2, value=vihar.get('vihar_date', 'N/A'))
+        date_cell.font = unicode_font
+        route_cell = ws.cell(row=row, column=3, value=vihar.get('route_no', 'N/A'))
+        route_cell.font = unicode_font
+        user_name_cell = ws.cell(row=row, column=4, value=user_name_str)
+        user_name_cell.font = unicode_font
         # Enable text wrapping for user name cell
         user_name_cell.alignment = Alignment(wrap_text=True, vertical="top")
         # Adjust row height if there are multiple usernames (approximately 15 pixels per line)
@@ -1711,32 +1812,35 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
             participants = vihar_participants_map.get(vihar["id"], [])
             if len(participants) > 1:
                 ws.row_dimensions[row].height = 15 * len(participants) + 5  # Extra space for padding
-        ws.cell(row=row, column=4, value=thana_count)
-        ws.cell(row=row, column=5, value=f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}")
-        ws.cell(row=row, column=6, value=vihar.get('approx_kms', 0))
+        thana_cell = ws.cell(row=row, column=5, value=thana_count)
+        thana_cell.font = unicode_font
+        fromto_cell = ws.cell(row=row, column=6, value=f"{vihar.get('from_upashray', '')} → {vihar.get('to_upashray', '')}")
+        fromto_cell.font = unicode_font
+        kms_cell = ws.cell(row=row, column=7, value=vihar.get('approx_kms', 0))
+        kms_cell.font = unicode_font
         row += 1
     
     # Add total row - both TOTAL THANA and TOTAL KMs in same row
     total_row = row
     # Clear all cells in total row first
-    for col in range(1, 7):
+    for col in range(1, 8):
         ws.cell(row=total_row, column=col, value='')
         ws.cell(row=total_row, column=col).fill = PatternFill(
             start_color="F5F1E8", end_color="F5F1E8", fill_type="solid"
         )
-    # Set TOTAL THANA label in column 3 (Vihar Sevak) and value in column 4 (Thana)
-    total_thana_label_cell = ws.cell(row=total_row, column=3, value="TOTAL THANA:")
+    # Set TOTAL THANA label in column 4 (Vihar Sevak) and value in column 5 (Thana)
+    total_thana_label_cell = ws.cell(row=total_row, column=4, value="TOTAL THANA:")
     total_thana_label_cell.font = Font(bold=True)
     total_thana_label_cell.alignment = Alignment(horizontal="left", vertical="center")
-    total_thana_value_cell = ws.cell(row=total_row, column=4, value=total_thana)
+    total_thana_value_cell = ws.cell(row=total_row, column=5, value=total_thana)
     total_thana_value_cell.font = Font(bold=True)
     total_thana_value_cell.alignment = Alignment(horizontal="center", vertical="center")
-    
-    # Set TOTAL KMs label and value in columns 5-6
-    total_kms_label_cell = ws.cell(row=total_row, column=5, value="TOTAL KMs:")
+
+    # Set TOTAL KMs label and value in columns 6-7
+    total_kms_label_cell = ws.cell(row=total_row, column=6, value="TOTAL KMs:")
     total_kms_label_cell.font = Font(bold=True)
     total_kms_label_cell.alignment = Alignment(horizontal="right", vertical="center")
-    total_kms_value_cell = ws.cell(row=total_row, column=6, value=total_kms)
+    total_kms_value_cell = ws.cell(row=total_row, column=7, value=total_kms)
     total_kms_value_cell.font = Font(bold=True)
     total_kms_value_cell.alignment = Alignment(horizontal="right", vertical="center")
     # Ensure row height is adequate
@@ -1744,19 +1848,20 @@ async def download_excel_report(period: str, user_id: str = None, current_user: 
     
     # Summary row
     summary_row = total_row + 2
-    ws.merge_cells(f'A{summary_row}:F{summary_row}')
+    ws.merge_cells(f'A{summary_row}:G{summary_row}')
     summary_cell = ws.cell(row=summary_row, column=1)
     summary_cell.value = f"Summary: Total Vihars: {len(vihars)} | Total Distance: {total_kms:.2f} KMs | Total Thana: {total_thana}"
     summary_cell.font = Font(bold=True)
     summary_cell.alignment = Alignment(horizontal="center")
     
     # Column widths - adjusted for new columns
-    ws.column_dimensions['A'].width = 12  # Date
-    ws.column_dimensions['B'].width = 12  # Route No
-    ws.column_dimensions['C'].width = 20  # Vihar Sevak
-    ws.column_dimensions['D'].width = 10  # Thana
-    ws.column_dimensions['E'].width = 35  # From → To
-    ws.column_dimensions['F'].width = 12  # KMs
+    ws.column_dimensions['A'].width = 6   # No.
+    ws.column_dimensions['B'].width = 12  # Date
+    ws.column_dimensions['C'].width = 12  # Route No
+    ws.column_dimensions['D'].width = 20  # Vihar Sevak
+    ws.column_dimensions['E'].width = 10  # Thana
+    ws.column_dimensions['F'].width = 35  # From → To
+    ws.column_dimensions['G'].width = 12  # KMs
     
     # Save to buffer
     buffer = BytesIO()
