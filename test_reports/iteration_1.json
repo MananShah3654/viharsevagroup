@@ -1,0 +1,47 @@
+{
+  "summary": "Backend proxy + push companion tested via pytest (8/9 passed, 1 upstream-caused failure). Frontend flows exercised on mobile viewport (390x844): login OK, Home greeting shown, Vihars list with chips (બધા/આગામી/આજે/પૂર્ણ) and vihar-row-<id> rows render, Seva/History empty states (expected per spec), Profile language toggle (lang-gu/lang-en) switches labels including bottom tabs, logout confirm sheet works and returns to /login. Vihar detail (/vihar/{id}) CANNOT LOAD because the UPSTREAM production API returns HTTP 500 for every GET /api/vihars/{id} (confirmed with 5 distinct IDs and direct hit to https://viharsevagroup.vercel.app/api — not a bug in the companion backend or app). As a consequence the sticky bottom CTA (vihar-cta), join-seva toast and 'સેવા રદ કરો' confirm sheet could not be reached end-to-end from the UI; the participation POST endpoint itself works and is idempotent (verified via backend test). The vihar-detail screen eventually shows the error view 'માહિતી લાવવામાં ભૂલ / ફરી પ્રયાસ કરો' but only after ~40 s due to react-query retrying 3× with a 20 s per-request timeout.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/vihars/{id} (upstream)", "issue": "Production API https://viharsevagroup.vercel.app/api/vihars/{id} returns 500 Internal Server Error for every vihar id (tested 5 ids + an opted-in id). Companion proxy forwards 500 verbatim. This breaks the vihar detail / join-seva flow in the app. Fix must happen in the production backend (NOT in this repo).", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "app/vihar/[id]/index.tsx", "issue": "Error state takes ~40 s to appear when upstream detail returns 500 — react-query default retries (3× with 20 s timeout) keep the loading spinner visible. Users will think the app is frozen. Consider setting retry: 1 (or 0) and/or shorter timeoutMs for the vihar detail query.", "testID": "vihar-cta", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Join / cancel seva from vihar detail", "issue": "Cannot be verified end-to-end from UI because detail screen never renders — see upstream 500 above. Participation API itself works (verified via backend test).", "affected_testIDs": ["vihar-cta", "confirm-ok", "confirm-cancel"]}
+    ],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-native-web runtime", "issue": "Deprecation warnings in console: '\"shadow*\" style props are deprecated. Use \"boxShadow\"' and 'props.pointerEvents is deprecated. Use style.pointerEvents'. These come from third-party libs and should be audited (search for shadowColor/shadowOffset/shadowOpacity in /app/frontend/src/**/*.ts* and pointerEvents prop usage)."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_proxy_api.py",
+    "/app/test_reports/pytest/proxy_api.xml"
+  ],
+  "action_items": [
+    "Report upstream 500 on GET /vihars/{id} to the production API owner — this blocks the single most important user flow (opening a vihar + joining seva). All ids tested return 500 directly against https://viharsevagroup.vercel.app/api/vihars/{id}.",
+    "In app/vihar/[id]/index.tsx (and anywhere a react-query hook fetches vihar detail) set retry: 1 and consider timeoutMs ~8-10s so the error state surfaces in <15 s instead of ~40 s.",
+    "Replace deprecated react-native-web props: `shadow*` style keys -> `boxShadow` and `pointerEvents` prop -> `style.pointerEvents`. Check Button, Icon and other shared widgets.",
+    "Once upstream /vihars/{id} is fixed, re-run tests to verify sticky CTA, join toast ('તમારી સેવા નોંધાઈ ગઈ છે'), 'સેવા રદ કરો' confirm sheet, History 'આગામી/પૂર્ણ' population and /vihar/{id}/rsvp deep link redirect."
+  ],
+  "critical_code_review_comments": [
+    "Backend proxy stripped 'accept-encoding' – good; however it forwards the browser's 'host' header? It's in _HOP_BY_HOP so fine.",
+    "frontend/src/core/api/client.ts hardcodes 20 s AbortController timeout for every request; vihar detail would benefit from a shorter per-call timeout.",
+    "server.py: CORSMiddleware is added AFTER include_router / catch-all; FastAPI applies middleware at app level so this still works, but conventionally middleware is registered before routes for readability."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_proxy_api.py (new)",
+    "/app/test_reports/pytest/proxy_api.xml (new)",
+    "/app/test_reports/iteration_1.json (new)"
+  ],
+  "success_rate": {"backend": "89% (8/9; the 1 failure is caused by upstream 500, not by proxy code)", "frontend": "~85% — all tabs/screens render and interact correctly except vihar detail flow which is blocked by upstream API bug"},
+  "seed_data_creation": "None. Used provided test volunteer 9000000007 / 1111. One participation POST (status=in then out) was issued against production and immediately reverted; net state unchanged.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The upstream production API GET /vihars/{id} returns 500 for all ids. Until that is fixed, vihar detail and the join flow from detail cannot be verified via UI. Participation POST itself works (idempotent, verified). To re-verify the full flow quickly: login as 9000000007/1111 -> Vihars tab -> tap any vihar-row-* -> expect to see from/to upashray, counts, Seva status progress, and a sticky bottom button with testID='vihar-cta'. Tap CTA -> toast 'તમારી સેવા નોંધાઈ ગઈ છે' and label flips to 'સેવા રદ કરો'. Tap again -> confirm-ok/confirm-cancel sheet. Then open /vihar/{id}/rsvp directly in URL — should land on the same detail. Also verify History tab 'આગામી' tab now lists the vihar and the 'કુલ વિહાર' tile increments.",
+  "rca_of_issue": "Reproduction: curl -H 'Authorization: Bearer <token>' https://viharsevagroup.vercel.app/api/vihars/<any-id-from-list> -> HTTP 500 'Internal Server Error'. Confirmed against 5 distinct ids and against both companion proxy and direct upstream URL. Companion backend is a transparent passthrough and is not responsible. Mitigation: fix the upstream /vihars/{id} handler in the production API (viharsevagroup repo) — likely a serializer error similar to the known /auth/register 500 quirk."
+}

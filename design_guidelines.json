@@ -1,0 +1,200 @@
+{
+  "app_name": "Naranpura Vihar Seva",
+  "personality": "1 iOS-Native Clean (Variant: Highly Accessible & Serene)",
+  "personality_one_liner": "A calm, highly readable, and respectful spiritual utility designed with generous touch targets and warm contrast for an older demographic.",
+  "color": {
+    "light": {
+      "surface": "#FCFBF8",
+      "onSurface": "#2B2521",
+      "surfaceSecondary": "#FFFFFF",
+      "onSurfaceSecondary": "#2B2521",
+      "surfaceTertiary": "#F5EBE1",
+      "onSurfaceTertiary": "#4A3F37",
+      "surfaceInverse": "#3D352F",
+      "onSurfaceInverse": "#FFFFFF",
+      "brand": "#D9772F",
+      "onBrand": "#FFFFFF",
+      "brandPrimary": "#D9772F",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#BA5F1F",
+      "onBrandSecondary": "#FFFFFF",
+      "brandTertiary": "#F2DDCB",
+      "onBrandTertiary": "#8C4A19",
+      "success": "#2E7D32",
+      "onSuccess": "#FFFFFF",
+      "warning": "#ED6C02",
+      "onWarning": "#FFFFFF",
+      "error": "#D32F2F",
+      "onError": "#FFFFFF",
+      "info": "#0288D1",
+      "onInfo": "#FFFFFF",
+      "border": "#EADFD3",
+      "borderStrong": "#C2B2A3",
+      "divider": "#EADFD3",
+      "muted": "#70665B"
+    },
+    "dark": {
+      "surface": "#1F1B18",
+      "onSurface": "#F5EBE1",
+      "surfaceSecondary": "#2A2522",
+      "onSurfaceSecondary": "#F5EBE1",
+      "surfaceTertiary": "#3B3530",
+      "onSurfaceTertiary": "#D6C7B8",
+      "surfaceInverse": "#EADFD3",
+      "onSurfaceInverse": "#1F1B18",
+      "brand": "#D9772F",
+      "onBrand": "#FFFFFF",
+      "brandPrimary": "#D9772F",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#E08F4F",
+      "onBrandSecondary": "#1F1B18",
+      "brandTertiary": "#593012",
+      "onBrandTertiary": "#F2DDCB",
+      "success": "#4CAF50",
+      "onSuccess": "#1F1B18",
+      "warning": "#FF9800",
+      "onWarning": "#1F1B18",
+      "error": "#F44336",
+      "onError": "#FFFFFF",
+      "info": "#29B6F6",
+      "onInfo": "#1F1B18",
+      "border": "#3B3530",
+      "borderStrong": "#5C524A",
+      "divider": "#3B3530",
+      "muted": "#968A7D"
+    }
+  },
+  "typography": {
+    "displayFontFamily": "NotoSansGujarati-Medium",
+    "textFontFamily": "NotoSansGujarati-Regular",
+    "scale": {
+      "sm": 14,
+      "base": 16,
+      "lg": 18,
+      "xl": 22,
+      "2xl": 28
+    }
+  },
+  "spacing": {
+    "rule": "Generous spacing to aid readability and tap accuracy for older demographics.",
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 40,
+    "3xl": 56
+  },
+  "radius_tokens": {
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use over the tab bar to let scrollable content bleed through softly",
+      "Use behind the sticky bottom CTA container in Vihar Detail so lists don't abruptly cut off",
+      "Apply subtle translucent blur to the header"
+    ],
+    "dont's": [
+      "Avoid on core data cards to prevent readability issues",
+      "Do not use on progress bars or form fields"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home",
+      "purpose": "A welcoming dashboard showing the immediate Vihar to join, volunteer status, and upcoming sevas.",
+      "states": {
+        "loading": "Centered large spinner with 'માહિતી લાવી રહ્યા છીએ...' (Loading info...)",
+        "empty": "Illustration of a walking path with text 'હાલમાં કોઈ વિહાર નથી' (No current vihars) and a button to view past sevas.",
+        "error": "Message 'માહિતી લાવવામાં ભૂલ' (Error fetching info) with a prominent 'ફરી પ્રયાસ કરો' (Retry) button."
+      },
+      "layout": "Header: Title 'નારણપુરા વિહાર સેવા' and greeting 'પ્રણામ, {name}'. Hero Section: 'આજનો વિહાર' Card. Must use image 'hero_vihar_path' with a heavy vertical gradient scrim (transparent to 80% surfaceInverse) to guarantee Gujarati text readability. Inside card: Date/Time, Route (From -> To), counts for Sadhuji/Sadhviji/Wheelchair. Below counts, a thick progress bar (surfaceTertiary track, brandPrimary fill) with text 'સેવકો 3/5 જોડાયા'. Massive full-width CTA inside card '🙏 હું સેવા માટે આવીશ'. Following sections: 'મારી આગામી સેવા' (My Upcoming), 'આગામી વિહારો' (Upcoming Vihars) in a vertical list."
+    },
+    {
+      "name": "Vihar Detail",
+      "purpose": "Provides full context on a specific Vihar and allows the user to commit to it.",
+      "states": {
+        "loading": "Skeleton loader matching list rows.",
+        "empty": "Not applicable for detail view.",
+        "error": "Error text with prominent Retry button."
+      },
+      "layout": "Scrollable view starting with large Vihar route and time. A section for 'સેવા સ્થિતિ' (Seva Status) showing joined vs required volunteers. A list of confirmed volunteers with checkmarks (avatar initials in brandTertiary circles). Bottom: Sticky CTA container fixed at the bottom with a blur background. The CTA reads '🙏 હું સેવા માટે આવીશ' (Join) or 'સેવા રદ કરો' (Cancel) if already joined. The scroll view must have padding at the bottom equal to the sticky CTA height."
+    },
+    {
+      "name": "History (My Seva)",
+      "purpose": "Showcases the volunteer's lifetime contribution and past sevas.",
+      "states": {
+        "loading": "Centered spinner.",
+        "empty": "Text 'તમારી સેવાનો ઇતિહાસ અહીં દેખાશે' (Your seva history will appear here).",
+        "error": "Error text with prominent Retry button."
+      },
+      "layout": "Top section: 2x2 grid of stat tiles (Total Vihars, Total KM, Sadhuji, Sadhviji). Each tile is surfaceSecondary, radius md, shadow 1. The number is text 2xl in brandPrimary. Below: Tabs for 'આગામી' (Upcoming) and 'પૂર્ણ થયેલ' (Completed). A list view of past sevas showing Date, Route, and KM. High contrast text."
+    },
+    {
+      "name": "Profile",
+      "purpose": "Manages user preferences and language.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Cover image using 'profile_texture' with subtle brand tint. Avatar centered overlapping cover. List rows for Language toggle (Gujarati / English) and Logout. Large 48pt touch targets for rows."
+    },
+    {
+      "name": "Admin",
+      "purpose": "Tools for organizers to manage sevas.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Simple vertical list of administrative actions. 'નવો વિહાર બનાવો' (Create Vihar), 'હાજરી પૂરો' (Mark Attendance), 'વોટ્સએપ પર શેર કરો' (Share on WhatsApp). High contrast forms with labels always above inputs."
+    }
+  ],
+  "images": {
+    "hero_vihar_path": {
+      "url": "https://images.unsplash.com/photo-1767852354895-9c13787e5d2c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwxfHx3YWxraW5nJTIwcGF0aCUyMHN1bnJpc2UlMjBzZXJlbmUlMjBuYXR1cmUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc5MTI4MzgxMnww&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1762933604852-4b4409603588?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwzfHx3YWxraW5nJTIwcGF0aCUyMHN1bnJpc2UlMjBzZXJlbmUlMjBuYXR1cmUlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc5MTI4MzgxMnww&ixlib=rb-4.1.0&q=85",
+      "alt": "A serene walking path through misty trees at sunrise, evoking a spiritual journey"
+    },
+    "profile_texture": {
+      "url": "https://images.unsplash.com/photo-1596486935250-3ca1fb5c45b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxjYWxtJTIwYWJzdHJhY3QlMjB3YXJtJTIwc2FuZCUyMHRleHR1cmV8ZW58MHx8fHwxNzkxMjgzODEyfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Warm, calm sand ripples creating an abstract textured background"
+    }
+  },
+  "haptics": {
+    "join_seva": "success",
+    "cancel_seva": "medium",
+    "tab_switch": "light",
+    "language_toggle": "selection"
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: The app is for an older demographic. Do not scale down the typography scale. Font sizes start at 14pt (sm) and default body is 16pt (base).",
+    "CRITICAL: The app is Gujarati-first. Use `NotoSansGujarati` (Google Font) which ensures perfect rendering of complex conjuncts in Gujarati. Fallback to `Mukta` if needed.",
+    "Touch targets for ALL interactive elements (buttons, list rows, tabs) must be a minimum of 48x48 padding/hitSlop.",
+    "Implement the 'hero_vihar_path' image in the Home screen's 'Today's Vihar' card with the mandatory Gradient-to-dark Scrim Pattern (Layer 0: image, Layer 1: linear-gradient transparent -> >70% surfaceInverse, Layer 2: White Text). Ensure text contrast clears 4.5:1.",
+    "Ensure the Vihar Detail screen implements a fixed/sticky bottom CTA. The scrollable content must have bottom padding matching the CTA height so content isn't obscured.",
+    "The progress bar should be thick (at least 12pt height) so older users can easily gauge the 3/5 volunteer status.",
+    "No blue, purple, or indigo colors are permitted anywhere in the app per the <Colors> constraints.",
+    "Use MaterialCommunityIcons (e.g., `wheelchair-accessibility`, `walk`, `account-group`) as they scale well and have diverse metaphor coverage."
+  ]
+}
