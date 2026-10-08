@@ -11,8 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.emergent.sevaapp.vsx3ow",
       "associatedDomains": [
-        "applinks:naranpuraviharsevagroup.com",
-        "applinks:viharsevagroup.vercel.app"
+        "applinks:frontend-brown-seven-59cc4o771d.vercel.app",
+        "applinks:naranpuraviharsevagroup.com"
       ],
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "Get reminders for your upcoming vihar seva"
@@ -30,6 +30,7 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            { "scheme": "https", "host": "frontend-brown-seven-59cc4o771d.vercel.app", "pathPrefix": "/vihar" },
             { "scheme": "https", "host": "naranpuraviharsevagroup.com", "pathPrefix": "/vihar" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
