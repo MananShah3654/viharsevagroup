@@ -24,16 +24,29 @@
         "backgroundColor": "#D9772F"
       },
       "package": "com.emergent.sevaapp.vsx3ow",
-      "permissions": ["POST_NOTIFICATIONS"],
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "frontend-brown-seven-59cc4o771d.vercel.app", "pathPrefix": "/vihar" },
-            { "scheme": "https", "host": "naranpuraviharsevagroup.com", "pathPrefix": "/vihar" }
+            {
+              "scheme": "https",
+              "host": "frontend-brown-seven-59cc4o771d.vercel.app",
+              "pathPrefix": "/vihar"
+            },
+            {
+              "scheme": "https",
+              "host": "naranpuraviharsevagroup.com",
+              "pathPrefix": "/vihar"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -73,7 +86,8 @@
       "expo-secure-store",
       "expo-web-browser",
       "expo-status-bar",
-      "@react-native-vector-icons/material-design-icons"
+      "@react-native-vector-icons/material-design-icons",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
