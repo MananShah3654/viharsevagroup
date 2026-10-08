@@ -3,13 +3,12 @@ import { Pressable, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 
 import { useAuth } from "@/src/core/auth/auth-context";
 import { useI18n } from "@/src/core/i18n";
 import { ApiError, OfflineError } from "@/src/core/api/client";
 import { Button } from "@/src/shared/widgets/Button";
-import { Icon } from "@/src/shared/widgets/Icon";
 import { Txt } from "@/src/shared/widgets/Txt";
 import { useToast } from "@/src/shared/widgets/Toast";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
@@ -53,12 +52,11 @@ export default function LoginScreen() {
       bottomOffset={24}
       keyboardShouldPersistTaps="handled"
     >
-      <LinearGradient
-        colors={[colors.brandPrimary, colors.brandSecondary]}
+      <Image
+        source={require("@/assets/images/logo_vsg.png")}
         style={styles.logo}
-      >
-        <Icon name="hands-pray" size={44} color={colors.onBrandPrimary} />
-      </LinearGradient>
+        contentFit="contain"
+      />
 
       <Txt w="700" size={fontSize.xxl} center color={colors.onSurface} style={styles.title}>
         {t("appName")}
@@ -130,11 +128,9 @@ const useStyles = makeStyles((colors) => ({
     alignItems: "center",
   },
   logo: {
-    width: 88,
-    height: 88,
-    borderRadius: radius.lg,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 96,
+    height: 96,
+    alignSelf: "center",
     marginBottom: spacing.lg,
   },
   title: { marginBottom: spacing.xs },

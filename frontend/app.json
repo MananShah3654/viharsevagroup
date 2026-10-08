@@ -76,6 +76,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "mananshah3654",
+    "extra": {
+      "eas": {
+        "projectId": "34d550f9-ea01-4ba2-8c3c-5dead432f447"
+      }
     }
   }
 }

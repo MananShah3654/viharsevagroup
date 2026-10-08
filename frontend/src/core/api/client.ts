@@ -9,6 +9,12 @@ export function setTokenGetter(fn: () => string | null) {
   tokenGetter = fn;
 }
 
+/** Auth header for callers outside apiRequest (e.g. raw blob downloads). */
+export function authHeader(): Record<string, string> {
+  const token = tokenGetter();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

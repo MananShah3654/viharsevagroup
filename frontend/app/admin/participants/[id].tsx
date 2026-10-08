@@ -21,10 +21,10 @@ import type { Participation, User } from "@/src/shared/models";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 export default function ParticipantsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, assign } = useLocalSearchParams<{ id: string; assign?: string }>();
   const styles = useStyles();
   const { colors } = useTheme();
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const confirm = useConfirm();
@@ -38,7 +38,7 @@ export default function ParticipantsScreen() {
     enabled: !!id,
   });
 
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(assign === "1");
   const [attendance, setAttendance] = useState<string[]>([]);
   const attKey = STORAGE_KEYS.attendancePrefix + id;
 
@@ -111,7 +111,7 @@ export default function ParticipantsScreen() {
         <Txt w="700" size={fontSize.lg} color={colors.onSurface} style={styles.flex} numberOfLines={1}>
           {t("viewParticipants")}
         </Txt>
-        <Pressable testID="participants-share" onPress={() => vihar.data && shareAnnouncement(vihar.data, lang)} hitSlop={12}>
+        <Pressable testID="participants-share" onPress={() => vihar.data && shareAnnouncement(vihar.data)} hitSlop={12}>
           <Icon name="whatsapp" size={24} color={colors.success} />
         </Pressable>
       </View>

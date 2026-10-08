@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -7,22 +7,13 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useAuth } from "@/src/core/auth/auth-context";
 import { useI18n } from "@/src/core/i18n";
 import { ApiError, OfflineError } from "@/src/core/api/client";
+import { validateMandatoryUserFields } from "@/src/core/validation/mandatoryFields";
 import { Button } from "@/src/shared/widgets/Button";
+import { FormField } from "@/src/shared/widgets/FormField";
 import { Icon } from "@/src/shared/widgets/Icon";
 import { Txt } from "@/src/shared/widgets/Txt";
 import { useToast } from "@/src/shared/widgets/Toast";
-import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
-
-interface FieldProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  keyboardType?: "default" | "phone-pad" | "number-pad";
-  secure?: boolean;
-  maxLength?: number;
-  placeholder?: string;
-  testID: string;
-}
+import { fontSize, makeStyles, spacing, useTheme } from "@/src/theme";
 
 export default function RegisterScreen() {
   const styles = useStyles();
@@ -36,6 +27,7 @@ export default function RegisterScreen() {
   const [form, setForm] = useState({
     phone: "",
     password: "",
+    confirm_password: "",
     name: "",
     area: "",
     blood_group: "",
@@ -46,13 +38,19 @@ export default function RegisterScreen() {
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const onSubmit = async () => {
-    if (form.phone.length < 10 || form.password.length !== 4 || !form.name.trim()) {
-      toast.show(t("required"), "error");
+    const error = validateMandatoryUserFields(
+      form,
+      { requireArea: true, requirePassword: true, requireConfirm: true },
+      t,
+    );
+    if (error) {
+      toast.show(error, "error");
       return;
     }
     setLoading(true);
     try {
-      await signUp(form);
+      const { confirm_password, ...payload } = form;
+      await signUp(payload);
     } catch (e) {
       if (e instanceof OfflineError) toast.show(t("offline"), "error");
       else if (e instanceof ApiError) toast.show(e.message, "error");
@@ -63,34 +61,6 @@ export default function RegisterScreen() {
     setLoading(false);
     router.replace("/(tabs)");
   };
-
-  const Field = ({
-    label,
-    value,
-    onChange,
-    keyboardType = "default",
-    secure,
-    maxLength,
-    placeholder,
-    testID,
-  }: FieldProps) => (
-    <View style={styles.field}>
-      <Txt w="500" size={15} color={colors.onSurfaceTertiary}>
-        {label}
-      </Txt>
-      <TextInput
-        testID={testID}
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboardType}
-        secureTextEntry={secure}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        placeholderTextColor={colors.muted}
-      />
-    </View>
-  );
 
   return (
     <KeyboardAwareScrollView
@@ -108,17 +78,18 @@ export default function RegisterScreen() {
         </Txt>
       </View>
 
-      <Field label={t("name")} value={form.name} onChange={set("name")} testID="reg-name" />
-      <Field
+      <FormField label={t("name")} value={form.name} onChange={set("name")} required testID="reg-name" />
+      <FormField
         label={t("phone")}
         value={form.phone}
         onChange={(v) => set("phone")(v.replace(/[^0-9]/g, ""))}
         keyboardType="phone-pad"
         maxLength={10}
         placeholder="9876543210"
+        required
         testID="reg-phone"
       />
-      <Field
+      <FormField
         label={t("password")}
         value={form.password}
         onChange={(v) => set("password")(v.replace(/[^0-9]/g, ""))}
@@ -126,29 +97,44 @@ export default function RegisterScreen() {
         secure
         maxLength={4}
         placeholder="••••"
+        required
         testID="reg-password"
       />
-      <Field label={t("area")} value={form.area} onChange={set("area")} testID="reg-area" />
-      <Field
+      <FormField
+        label={t("confirmPassword")}
+        value={form.confirm_password}
+        onChange={(v) => set("confirm_password")(v.replace(/[^0-9]/g, ""))}
+        keyboardType="number-pad"
+        secure
+        maxLength={4}
+        placeholder="••••"
+        required
+        testID="reg-confirm-password"
+      />
+      <FormField label={t("area")} value={form.area} onChange={set("area")} required testID="reg-area" />
+      <FormField
         label={t("bloodGroup")}
         value={form.blood_group}
         onChange={set("blood_group")}
         placeholder="O+"
+        required
         testID="reg-blood"
       />
-      <Field
+      <FormField
         label={t("emergencyContact")}
         value={form.emergency_contact}
         onChange={(v) => set("emergency_contact")(v.replace(/[^0-9]/g, ""))}
         keyboardType="phone-pad"
         maxLength={10}
+        required
         testID="reg-emergency"
       />
-      <Field
+      <FormField
         label={t("dob")}
         value={form.date_of_birth}
         onChange={set("date_of_birth")}
         placeholder="DD/MM/YYYY"
+        required
         testID="reg-dob"
       />
 
@@ -170,7 +156,7 @@ export default function RegisterScreen() {
   );
 }
 
-const useStyles = makeStyles((colors) => ({
+const useStyles = makeStyles(() => ({
   container: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
@@ -182,18 +168,6 @@ const useStyles = makeStyles((colors) => ({
     alignItems: "center",
     gap: spacing.md,
     marginBottom: spacing.md,
-  },
-  field: { gap: spacing.xs },
-  input: {
-    backgroundColor: colors.surfaceTertiary,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    minHeight: 52,
-    fontSize: fontSize.base,
-    fontFamily: "NotoSansGujarati-Regular",
-    color: colors.onSurface,
   },
   linkWrap: { paddingVertical: spacing.lg },
 }));

@@ -9,8 +9,9 @@ This companion backend does two things:
      app calls this backend (same origin as the app), which removes browser
      CORS issues on web and keeps the production backend as the single source
      of truth (every request is forwarded verbatim).
-  2. Emergent-managed push notification relay (register tokens + send pushes),
-     which needs a server holding the EMERGENT_PUSH_KEY.
+  2. Push notification relay using Expo's own push service (no third-party
+     account/key needed) — stores each user's Expo push token in memory and
+     forwards send requests to https://exp.host/--/api/v2/push/send.
 """
 import os
 import re
@@ -36,56 +37,62 @@ UPSTREAM_API_URL = os.environ.get("UPSTREAM_API_URL", "https://viharsevagroup.ve
 app = FastAPI(title="Vihar Seva Companion (proxy + push)")
 
 # ---------------------------------------------------------------------------
-# Emergent push relay
+# Push relay — Expo's own push service (no third-party account/key).
+# https://docs.expo.dev/push-notifications/sending-notifications/
 # ---------------------------------------------------------------------------
-PUSH_BASE_URL = "https://integrations.emergentagent.com"
-PUSH_KEY = os.environ.get("EMERGENT_PUSH_KEY", "placeholder")
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
-_push_client = httpx.AsyncClient(
-    base_url=PUSH_BASE_URL,
-    headers={"X-Push-Key": PUSH_KEY},
-    timeout=10.0,
-)
+_push_client = httpx.AsyncClient(timeout=10.0)
 
 # Upstream client for the data proxy.
 _upstream = httpx.AsyncClient(base_url=UPSTREAM_API_URL, timeout=30.0)
 
 push_router = APIRouter(prefix="/api")
 
+# user_id -> set of Expo push tokens ("ExponentPushToken[...]"). In-memory by
+# design: tokens re-register every app open (see registerForPush on the
+# client), so losing this on a backend restart/redeploy just means the next
+# app open repopulates it — no separate datastore needed for this volume.
+_push_tokens: dict[str, set[str]] = {}
+
 
 class RegisterPushBody(BaseModel):
     user_id: str
-    platform: str  # "android" | "ios"
-    device_token: str
+    platform: str  # "android" | "ios" — kept for logging/debugging only
+    device_token: str  # an Expo push token, e.g. "ExponentPushToken[xxxx]"
 
 
 @push_router.post("/register-push", status_code=201)
 async def register_push(body: RegisterPushBody):
-    resp = await _push_client.post("/api/v1/push/users/register", json=body.model_dump())
-    if resp.status_code == 401:
-        raise HTTPException(500, "EMERGENT_PUSH_KEY missing or invalid")
-    if resp.status_code >= 500:
-        raise HTTPException(502, "Push provider unavailable")
-    resp.raise_for_status()
+    _push_tokens.setdefault(body.user_id, set()).add(body.device_token)
     return {"status": "registered"}
 
 
-async def send_push(recipients: list[str], data: dict, idempotency_key: str | None = None) -> None:
+async def send_push(recipients: list[str], data: dict) -> None:
     if not recipients:
         return
-    if len(recipients) > 100:
-        raise ValueError("max 100 recipients per /trigger call; chunk before sending")
     if "title" not in data or "message" not in data:
         raise ValueError("data must include title and message")
-    payload: dict = {"recipients": recipients, "data": data}
-    if idempotency_key:
-        payload["$idempotency_key"] = idempotency_key
-    resp = await _push_client.post("/api/v1/push/trigger", json=payload)
-    if resp.status_code == 401:
-        raise HTTPException(500, "EMERGENT_PUSH_KEY missing or invalid")
-    if resp.status_code >= 500:
-        raise HTTPException(502, "Push provider unavailable")
-    resp.raise_for_status()
+
+    tokens = sorted({t for uid in recipients for t in _push_tokens.get(uid, ())})
+    if not tokens:
+        return
+
+    messages = [
+        {
+            "to": token,
+            "title": data["title"],
+            "body": data["message"],
+            "data": {k: v for k, v in data.items() if k not in ("title", "message")},
+        }
+        for token in tokens
+    ]
+    # Expo accepts up to 100 messages per request.
+    for i in range(0, len(messages), 100):
+        resp = await _push_client.post(EXPO_PUSH_URL, json=messages[i : i + 100])
+        if resp.status_code >= 500:
+            raise HTTPException(502, "Push provider unavailable")
+        resp.raise_for_status()
 
 
 class NotifyBody(BaseModel):
@@ -102,7 +109,7 @@ async def push_notify(body: NotifyBody):
     if body.vihar_id:
         data["action_url"] = f"/vihar/{body.vihar_id}"
     try:
-        await send_push(body.recipients, data, idempotency_key=None)
+        await send_push(body.recipients, data)
     except Exception as e:  # never crash the admin action on push failure
         logger.warning(f"Push failed (non-blocking): {e}")
         return {"status": "error", "detail": str(e)}

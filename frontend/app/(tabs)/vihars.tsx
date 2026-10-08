@@ -3,16 +3,27 @@ import { FlatList, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAuth } from "@/src/core/auth/auth-context";
 import { useI18n } from "@/src/core/i18n";
 import { useOnline } from "@/src/core/offline/net";
 import { useVihars } from "@/src/core/vihar/hooks";
-import { isPast, isToday, isUpcoming, sortByDateAsc, sortByDateDesc } from "@/src/core/vihar/utils";
+import {
+  isPast,
+  isToday,
+  isUpcoming,
+  sortByDateAsc,
+  sortByDateDesc,
+  sortByRouteDesc,
+  viharYearOf,
+} from "@/src/core/vihar/utils";
 import { usesNativeTabs } from "@/src/navigation";
+import { AdminViharCard } from "@/src/shared/widgets/AdminViharCard";
 import { ChipRow } from "@/src/shared/widgets/ChipRow";
 import { OfflineBanner } from "@/src/shared/widgets/OfflineBanner";
 import { EmptyView, ErrorView, LoadingView } from "@/src/shared/widgets/StateViews";
 import { Txt } from "@/src/shared/widgets/Txt";
 import { ViharRow } from "@/src/shared/widgets/ViharRow";
+import { currentViharYear, ViharYearFilter } from "@/src/shared/widgets/ViharYearFilter";
 import { fontSize, makeStyles, spacing, useTheme } from "@/src/theme";
 
 type Filter = "all" | "today" | "upcoming" | "past";
@@ -24,8 +35,10 @@ export default function ViharsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const online = useOnline();
+  const { isAdmin } = useAuth();
   const vihars = useVihars();
   const [filter, setFilter] = useState<Filter>("all");
+  const [year, setYear] = useState(currentViharYear());
 
   const data = useMemo(() => {
     const all = vihars.data ?? [];
@@ -33,8 +46,10 @@ export default function ViharsScreen() {
     if (filter === "today") list = all.filter(isToday);
     else if (filter === "upcoming") list = all.filter(isUpcoming);
     else if (filter === "past") list = all.filter(isPast);
+    if (year !== "all") list = list.filter((v) => viharYearOf(v) === year);
+    if (isAdmin) return [...list].sort(sortByRouteDesc);
     return [...list].sort(filter === "past" ? sortByDateDesc : sortByDateAsc);
-  }, [vihars.data, filter]);
+  }, [vihars.data, filter, year, isAdmin]);
 
   const bottomChrome = usesNativeTabs ? insets.bottom : 0;
 
@@ -52,6 +67,7 @@ export default function ViharsScreen() {
           {t("tabVihars")}
         </Txt>
         <ChipRow options={options} value={filter} onChange={setFilter} />
+        <ViharYearFilter vihars={vihars.data ?? []} value={year} onChange={setYear} />
       </View>
       {!online ? <OfflineBanner label={t("offline")} /> : null}
 
@@ -63,9 +79,13 @@ export default function ViharsScreen() {
         <FlatList
           data={data}
           keyExtractor={(v) => v.id}
-          renderItem={({ item }) => (
-            <ViharRow vihar={item} onPress={() => router.push(`/vihar/${item.id}`)} />
-          )}
+          renderItem={({ item }) =>
+            isAdmin ? (
+              <AdminViharCard vihar={item} />
+            ) : (
+              <ViharRow vihar={item} onPress={() => router.push(`/vihar/${item.id}`)} />
+            )
+          }
           contentContainerStyle={[styles.list, { paddingBottom: bottomChrome + spacing.xxl }]}
           ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           showsVerticalScrollIndicator={false}

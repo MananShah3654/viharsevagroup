@@ -5,17 +5,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 
 import * as api from "@/src/core/api/endpoints";
+import { downloadFile } from "@/src/core/api/download";
 import { useI18n } from "@/src/core/i18n";
 import { useOnline } from "@/src/core/offline/net";
 import { qk, useMyVihars } from "@/src/core/vihar/hooks";
-import { isUpcoming, sortByDateAsc, sortByDateDesc } from "@/src/core/vihar/utils";
+import { isUpcoming, sortByDateAsc, sortByDateDesc, viharYearOf } from "@/src/core/vihar/utils";
 import { usesNativeTabs } from "@/src/navigation";
+import { Button } from "@/src/shared/widgets/Button";
 import { ChipRow } from "@/src/shared/widgets/ChipRow";
 import { Icon } from "@/src/shared/widgets/Icon";
 import { OfflineBanner } from "@/src/shared/widgets/OfflineBanner";
 import { EmptyView, LoadingView } from "@/src/shared/widgets/StateViews";
+import { useToast } from "@/src/shared/widgets/Toast";
 import { Txt } from "@/src/shared/widgets/Txt";
 import { ViharRow } from "@/src/shared/widgets/ViharRow";
+import { currentViharYear, ViharYearFilter } from "@/src/shared/widgets/ViharYearFilter";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
 export default function HistoryScreen() {
@@ -25,16 +29,34 @@ export default function HistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const online = useOnline();
+  const toast = useToast();
   const [tab, setTab] = useState<"upcoming" | "completed">("completed");
+  const [year, setYear] = useState(currentViharYear());
+  const [downloading, setDownloading] = useState<"pdf" | "excel" | null>(null);
 
   const mine = useMyVihars();
   const report = useQuery({ queryKey: qk.report("yearly"), queryFn: () => api.getReport("yearly") });
 
+  const onDownload = async (kind: "pdf" | "excel") => {
+    setDownloading(kind);
+    try {
+      await downloadFile(
+        `/reports/download/${kind}?period=yearly`,
+        `my_vihar_report_yearly.${kind === "pdf" ? "pdf" : "xlsx"}`,
+      );
+      toast.show(kind === "pdf" ? t("pdfDownloaded") : t("excelDownloaded"), "success");
+    } catch {
+      toast.show(t("downloadFailed"), "error");
+    }
+    setDownloading(null);
+  };
+
   const list = useMemo(() => {
     const all = mine.data ?? [];
-    const filtered = tab === "upcoming" ? all.filter(isUpcoming) : all.filter((v) => !isUpcoming(v));
+    let filtered = tab === "upcoming" ? all.filter(isUpcoming) : all.filter((v) => !isUpcoming(v));
+    if (year !== "all") filtered = filtered.filter((v) => viharYearOf(v) === year);
     return [...filtered].sort(tab === "upcoming" ? sortByDateAsc : sortByDateDesc);
-  }, [mine.data, tab]);
+  }, [mine.data, tab, year]);
 
   const bottomChrome = usesNativeTabs ? insets.bottom : 0;
   const r = report.data;
@@ -74,6 +96,27 @@ export default function HistoryScreen() {
           ))}
         </View>
 
+        <View style={styles.downloadRow}>
+          <Button
+            label={t("downloadPdf")}
+            icon="file-pdf-box"
+            variant="secondary"
+            loading={downloading === "pdf"}
+            onPress={() => onDownload("pdf")}
+            testID="history-download-pdf"
+            style={styles.flex}
+          />
+          <Button
+            label={t("downloadExcel")}
+            icon="file-excel"
+            variant="secondary"
+            loading={downloading === "excel"}
+            onPress={() => onDownload("excel")}
+            testID="history-download-excel"
+            style={styles.flex}
+          />
+        </View>
+
         <ChipRow
           options={[
             { key: "completed" as const, label: t("completed") },
@@ -82,6 +125,7 @@ export default function HistoryScreen() {
           value={tab}
           onChange={setTab}
         />
+        <ViharYearFilter vihars={mine.data ?? []} value={year} onChange={setYear} />
 
         <View style={styles.list}>
           {mine.isLoading ? (
@@ -125,4 +169,6 @@ const useStyles = makeStyles((colors) => ({
     elevation: 1,
   },
   list: { gap: spacing.sm, marginTop: spacing.xs },
+  downloadRow: { flexDirection: "row", gap: spacing.sm },
+  flex: { flex: 1 },
 }));

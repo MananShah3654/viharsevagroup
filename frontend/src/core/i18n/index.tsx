@@ -132,6 +132,116 @@ export const T: Dict = {
   joinError: { gu: "સેવા નોંધવામાં ભૂલ", en: "Could not record seva" },
   savedOffline: { gu: "ઑફલાઇન — ફરી પ્રયાસ કરો", en: "Offline — please retry" },
   thana: { gu: "ઠાણા", en: "Thana" },
+
+  // mandatory-field validation messages
+  phoneRequired: { gu: "10 અંકનો ફોન નંબર દાખલ કરો", en: "Enter a 10-digit phone number" },
+  nameRequired: { gu: "નામ દાખલ કરો", en: "Please enter your name" },
+  areaRequired: { gu: "વિસ્તાર દાખલ કરો", en: "Please enter your area" },
+  bloodGroupRequired: { gu: "બ્લડ ગ્રુપ દાખલ કરો", en: "Please enter your blood group" },
+  emergencyContactRequired: {
+    gu: "10 અંકનો ઇમરજન્સી સંપર્ક નંબર દાખલ કરો",
+    en: "Enter a 10-digit emergency contact number",
+  },
+  dobRequired: { gu: "જન્મ તારીખ દાખલ કરો", en: "Please enter your date of birth" },
+  passwordRequired: { gu: "પાસવર્ડ દાખલ કરો", en: "Please enter a password" },
+  passwordInvalid: { gu: "પાસવર્ડ બરાબર 4 અંકનો હોવો જોઈએ", en: "Password must be exactly 4 digits" },
+  confirmPassword: { gu: "પાસવર્ડની પુષ્ટિ કરો", en: "Confirm password" },
+  confirmPasswordRequired: { gu: "પાસવર્ડની પુષ્ટિ કરો", en: "Please confirm your password" },
+  passwordMismatch: { gu: "પાસવર્ડ મેળ ખાતા નથી", en: "Passwords do not match" },
+
+  // profile edit
+  photo: { gu: "ફોટો", en: "Photo" },
+  age: { gu: "ઉંમર", en: "Age" },
+  address: { gu: "સરનામું", en: "Address" },
+  car: { gu: "ગાડી", en: "Car" },
+  profileUpdated: { gu: "પ્રોફાઇલ અપડેટ થઈ", en: "Profile updated" },
+  removePhoto: { gu: "ફોટો કાઢો", en: "Remove photo" },
+  photoTooLarge: { gu: "ફોટો 5MB કરતાં નાનો હોવો જોઈએ", en: "Photo must be under 5MB" },
+
+  // change password
+  oldPassword: { gu: "જૂનો પાસવર્ડ", en: "Old password" },
+  newPassword: { gu: "નવો પાસવર્ડ", en: "New password" },
+  passwordChanged: { gu: "પાસવર્ડ બદલાઈ ગયો", en: "Password changed" },
+
+  // vihar form additions
+  sahebjiName: { gu: "સાહેબજીનું નામ", en: "Sahebji name" },
+  self: { gu: "જાતે", en: "Self" },
+  luggage: { gu: "સામાન", en: "Luggage" },
+  dori: { gu: "ડોરી", en: "Dori" },
+  carRequired: { gu: "કાર જરૂરી", en: "Car required" },
+  activa: { gu: "એક્ટિવા", en: "Activa" },
+  calculate: { gu: "ગણતરી કરો", en: "Calculate" },
+  splitVihar: { gu: "બહુવિધ તબક્કામાં વહેંચો", en: "Split into multiple stages" },
+  stage: { gu: "તબક્કો", en: "Stage" },
+  addStage: { gu: "તબક્કો ઉમેરો", en: "Add stage" },
+  removeStage: { gu: "તબક્કો કાઢો", en: "Remove stage" },
+  editVihar: { gu: "વિહાર સંપાદિત કરો", en: "Edit vihar" },
+  deleteVihar: { gu: "વિહાર કાઢો", en: "Delete vihar" },
+  confirmDeleteVihar: {
+    gu: "શું તમે ખરેખર આ વિહાર કાઢવા માંગો છો?",
+    en: "Are you sure you want to delete this vihar?",
+  },
+  viharDeleted: { gu: "વિહાર કાઢી નાખ્યો", en: "Vihar deleted" },
+  viharUpdated: { gu: "વિહાર અપડેટ થયો", en: "Vihar updated" },
+
+  // admin user management
+  manageUsers: { gu: "સેવકોનું સંચાલન", en: "Manage users" },
+  addUser: { gu: "સેવક ઉમેરો", en: "Add user" },
+  editUser: { gu: "સેવક સંપાદિત કરો", en: "Edit user" },
+  userCreated: { gu: "સેવક ઉમેરાયો", en: "User created" },
+  userUpdated: { gu: "સેવક અપડેટ થયો", en: "User updated" },
+  userDeleted: { gu: "સેવક કાઢી નાખ્યો", en: "User deleted" },
+  confirmDeleteUser: {
+    gu: "શું તમે ખરેખર આ સેવકને કાઢવા માંગો છો?",
+    en: "Are you sure you want to delete this user?",
+  },
+  makeAdmin: { gu: "એડમિન બનાવો", en: "Make admin" },
+  makeUser: { gu: "સેવક બનાવો", en: "Make user" },
+  confirmMakeAdmin: {
+    gu: "શું તમે ખરેખર {name} ને એડમિન બનાવવા માંગો છો?",
+    en: "Are you sure you want to make {name} an admin?",
+  },
+  confirmMakeUser: {
+    gu: "શું તમે ખરેખર {name} ને સેવક બનાવવા માંગો છો?",
+    en: "Are you sure you want to make {name} a regular user?",
+  },
+  roleUpdated: { gu: "ભૂમિકા અપડેટ થઈ", en: "Role updated" },
+  filterByCar: { gu: "ગાડી સાથે વિહારસેવક", en: "Viharsevak with car" },
+  searchUsers: { gu: "નામ અથવા ફોન દ્વારા શોધો", en: "Search by name or phone" },
+
+  // reports
+  reports: { gu: "અહેવાલો", en: "Reports" },
+  period: { gu: "સમયગાળો", en: "Period" },
+  weekly: { gu: "સાપ્તાહિક", en: "Weekly" },
+  monthly: { gu: "માસિક", en: "Monthly" },
+  yearly: { gu: "વાર્ષિક", en: "Yearly" },
+  allUsers: { gu: "બધા સેવકો", en: "All users" },
+  totalKms: { gu: "કુલ કિમી", en: "Total KMs" },
+  downloadPdf: { gu: "PDF ડાઉનલોડ કરો", en: "Download PDF" },
+  downloadExcel: { gu: "Excel ડાઉનલોડ કરો", en: "Download Excel" },
+  pdfDownloaded: { gu: "PDF ડાઉનલોડ થયું", en: "PDF downloaded" },
+  excelDownloaded: { gu: "Excel ડાઉનલોડ થયું", en: "Excel downloaded" },
+  downloadFailed: { gu: "ડાઉનલોડ નિષ્ફળ ગયું", en: "Download failed" },
+
+  // static pages
+  privacyPolicy: { gu: "ગોપનીયતા નીતિ", en: "Privacy Policy" },
+  childSafety: { gu: "બાળ સુરક્ષા ધોરણો", en: "Child Safety Standards" },
+
+  // admin dashboard home
+  totalUsers: { gu: "કુલ સેવકો", en: "Total Users" },
+  activeParticipants: { gu: "સક્રિય સહભાગીઓ", en: "Active Participants" },
+  thisMonthSummary: { gu: "આ મહિનાની સારાંશ", en: "This Month Summary" },
+  newUsers: { gu: "નવા સેવકો", en: "New Users" },
+  jayJinendra: { gu: "જય જિનેન્દ્ર", en: "Jay Jinendra" },
+  copyToWhatsapp: { gu: "વોટ્સએપ માટે કૉપિ કરો", en: "Copy to WhatsApp" },
+  copiedToClipboard: { gu: "ક્લિપબોર્ડ પર કૉપિ થયું", en: "Copied to clipboard" },
+  previewParticipants: { gu: "સેવકો જુઓ", en: "Preview Participants" },
+  aboutUs: { gu: "અમારા વિશે", en: "About Us" },
+  ourTeam: { gu: "અમારી લીડરશિપ ટીમ", en: "Our Leadership Team" },
+  tagline: { gu: "જૈન શ્રમણ શ્રમણી ભગવંતોની સુરક્ષા અને ભક્તિ સાથે સેવા", en: "Serving Jain Shraman Shramani Bhagvant with Safety and Devotion" },
+  assignViharSevak: { gu: "વિહાર સેવક સોંપો", en: "Assign Vihar Sevak" },
+  filterByDate: { gu: "તારીખ પ્રમાણે ફિલ્ટર કરો", en: "Filter by date" },
+  clearFilter: { gu: "ફિલ્ટર હટાવો", en: "Clear filter" },
 };
 
 interface I18nState {

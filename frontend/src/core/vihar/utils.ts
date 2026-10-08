@@ -98,3 +98,28 @@ export function sortByDateAsc(a: Vihar, b: Vihar): number {
 export function sortByDateDesc(a: Vihar, b: Vihar): number {
   return -sortByDateAsc(a, b);
 }
+
+// main's admin lists sort by route number descending (latest-created first),
+// not by date — route numbers are assigned sequentially on create.
+export function sortByRouteDesc(a: Vihar, b: Vihar): number {
+  const na = parseInt(a.route_no, 10);
+  const nb = parseInt(b.route_no, 10);
+  if (!isNaN(na) && !isNaN(nb) && na !== nb) return nb - na;
+  return b.route_no.localeCompare(a.route_no);
+}
+
+// "Vihar year" (season): Nov 1 – Jul 31, labeled like "25-26" for Nov 2025 –
+// Jul 2026 — vihars happen outside Chaturmas (roughly Aug–Oct), so a date in
+// that gap is bucketed into the upcoming season that starts that November.
+export function viharYearLabel(d: Date): string {
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1; // 1-12
+  const startYear = m <= 7 ? y - 1 : y; // Jan-Jul belongs to the season that started last Nov
+  const two = (n: number) => String(((n % 100) + 100) % 100).padStart(2, "0");
+  return `${two(startYear)}-${two(startYear + 1)}`;
+}
+
+export function viharYearOf(v: Vihar): string | null {
+  const d = parseViharDate(v.vihar_date);
+  return d ? viharYearLabel(d) : null;
+}

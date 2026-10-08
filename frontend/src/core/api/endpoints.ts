@@ -69,8 +69,9 @@ export function participate(vihar_id: string, status: "in" | "out") {
   );
 }
 
-export function getReport(period: "weekly" | "monthly" | "yearly") {
-  return apiRequest<ReportSummary>(`/reports/summary?period=${period}`);
+export function getReport(period: "weekly" | "monthly" | "yearly", userId?: string) {
+  const q = userId ? `&user_id=${userId}` : "";
+  return apiRequest<ReportSummary>(`/reports/summary?period=${period}${q}`);
 }
 
 // ---- Admin ----
@@ -80,6 +81,14 @@ export function nextRouteNumber() {
 
 export function createVihar(payload: Partial<Vihar>) {
   return apiRequest<Vihar>("/vihars", { method: "POST", body: payload });
+}
+
+export function updateVihar(id: string, payload: Partial<Vihar>) {
+  return apiRequest<Vihar>(`/vihars/${id}`, { method: "PUT", body: payload });
+}
+
+export function deleteVihar(id: string) {
+  return apiRequest<{ status: string }>(`/vihars/${id}`, { method: "DELETE" });
 }
 
 export interface ParticipantsResponse {
@@ -110,4 +119,37 @@ export function removeParticipant(vihar_id: string, participation_id: string) {
     `/vihars/${vihar_id}/participants/${participation_id}`,
     { method: "DELETE" },
   );
+}
+
+export interface AdminUserPayload {
+  phone: string;
+  name: string;
+  password?: string;
+  area: string;
+  blood_group: string;
+  emergency_contact: string;
+  date_of_birth: string;
+  age?: number;
+  address?: string;
+  car?: boolean;
+  photo?: string;
+}
+
+export function createUser(payload: AdminUserPayload) {
+  return apiRequest<User>("/admin/users", { method: "POST", body: payload });
+}
+
+export function updateUser(id: string, payload: Partial<AdminUserPayload>) {
+  return apiRequest<User>(`/admin/users/${id}`, { method: "PUT", body: payload });
+}
+
+export function deleteUser(id: string) {
+  return apiRequest<{ status: string }>(`/admin/users/${id}`, { method: "DELETE" });
+}
+
+export function setUserRole(phone: string, role: "admin" | "user") {
+  return apiRequest<{ status: string; message?: string }>("/admin/users/role", {
+    method: "PUT",
+    body: { phone, role },
+  });
 }

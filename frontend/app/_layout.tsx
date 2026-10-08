@@ -54,10 +54,11 @@ function AuthGate() {
   useEffect(() => {
     if (loading) return;
     const seg0 = segments[0];
-    const inAuth = seg0 === "login" || seg0 === "register";
-    if (!token && !inAuth) {
+    const isAuthScreen = seg0 === "login" || seg0 === "register";
+    const isPublicScreen = isAuthScreen || seg0 === "privacy" || seg0 === "child-safety" || seg0 === "about";
+    if (!token && !isPublicScreen) {
       router.replace("/login");
-    } else if (token && inAuth) {
+    } else if (token && isAuthScreen) {
       router.replace("/(tabs)");
     }
   }, [token, loading, segments]);
@@ -66,6 +67,15 @@ function AuthGate() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="vihar/[id]/index" />
       <Stack.Screen name="admin/create-vihar" options={{ presentation: "modal" }} />
+      <Stack.Screen name="admin/edit-vihar/[id]" options={{ presentation: "modal" }} />
+      <Stack.Screen name="admin/users/index" />
+      <Stack.Screen name="admin/users/[id]" options={{ presentation: "modal" }} />
+      <Stack.Screen name="admin/reports" />
+      <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
+      <Stack.Screen name="profile/change-password" options={{ presentation: "modal" }} />
+      <Stack.Screen name="privacy" />
+      <Stack.Screen name="child-safety" />
+      <Stack.Screen name="about" />
     </Stack>
   );
 }

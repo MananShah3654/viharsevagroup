@@ -5,10 +5,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { useAuth } from "@/src/core/auth/auth-context";
+import * as api from "@/src/core/api/endpoints";
+import { ApiError, OfflineError } from "@/src/core/api/client";
 import { useI18n } from "@/src/core/i18n";
 import { useOnline } from "@/src/core/offline/net";
-import { useParticipate, useVihar } from "@/src/core/vihar/hooks";
+import { qk, useParticipate, useVihar } from "@/src/core/vihar/hooks";
 import { formatDateLong, formatTime, joinedCount, volunteerTarget } from "@/src/core/vihar/utils";
 import { Button } from "@/src/shared/widgets/Button";
 import { CountPills } from "@/src/shared/widgets/CountPills";
@@ -32,6 +36,7 @@ export default function ViharDetailScreen() {
   const online = useOnline();
   const confirm = useConfirm();
   const toast = useToast();
+  const qc = useQueryClient();
 
   const q = useVihar(id!);
   const participate = useParticipate();
@@ -54,7 +59,7 @@ export default function ViharDetailScreen() {
     const list: { icon: any; label: string }[] = [];
     if (vihar.wheelchair > 0) list.push({ icon: "wheelchair-accessibility", label: `${t("wheelchair")}: ${vihar.wheelchair}` });
     if (vihar.luggage) list.push({ icon: "bag-suitcase", label: lang === "gu" ? "સામાન" : "Luggage" });
-    if (vihar.dori) list.push({ icon: "rope", label: lang === "gu" ? "ડોરી" : "Dori" });
+    if (vihar.dori) list.push({ icon: "link-variant", label: lang === "gu" ? "ડોરી" : "Dori" });
     if (vihar.car_required) list.push({ icon: "car", label: lang === "gu" ? "કાર જરૂરી" : "Car required" });
     if (vihar.activa) list.push({ icon: "moped", label: "Activa" });
     if (vihar.self) list.push({ icon: "human-handsup", label: lang === "gu" ? "સ્વયં વ્હીલચેર" : "Self wheelchair" });
@@ -83,6 +88,30 @@ export default function ViharDetailScreen() {
     }
   };
 
+  const onDelete = async () => {
+    if (!vihar) return;
+    const ok = await confirm({
+      title: t("deleteVihar"),
+      message: t("confirmDeleteVihar"),
+      confirmLabel: t("deleteVihar"),
+      cancelLabel: t("cancel"),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.deleteVihar(vihar.id);
+    } catch (e) {
+      if (e instanceof OfflineError) toast.show(t("offline"), "error");
+      else if (e instanceof ApiError) toast.show(e.message, "error");
+      else toast.show(t("somethingWrong"), "error");
+      return;
+    }
+    qc.invalidateQueries({ queryKey: qk.vihars });
+    qc.invalidateQueries({ queryKey: qk.myVihars });
+    toast.show(t("viharDeleted"), "success");
+    router.canGoBack() ? router.back() : router.replace("/(tabs)");
+  };
+
   const ctaHeight = 76 + insets.bottom;
 
   return (
@@ -95,6 +124,16 @@ export default function ViharDetailScreen() {
         <Txt w="700" size={fontSize.lg} color={colors.onSurface} numberOfLines={1} style={styles.flex}>
           {t("route")} {vihar?.route_no ?? ""}
         </Txt>
+        {isAdmin && vihar ? (
+          <>
+            <Pressable testID="vihar-edit" onPress={() => router.push(`/admin/edit-vihar/${vihar.id}`)} hitSlop={12}>
+              <Icon name="pencil" size={22} color={colors.onSurface} />
+            </Pressable>
+            <Pressable testID="vihar-delete" onPress={onDelete} hitSlop={12} style={{ marginLeft: spacing.md }}>
+              <Icon name="trash-can-outline" size={22} color={colors.error} />
+            </Pressable>
+          </>
+        ) : null}
       </View>
       {!online ? <OfflineBanner label={t("offline")} /> : null}
 

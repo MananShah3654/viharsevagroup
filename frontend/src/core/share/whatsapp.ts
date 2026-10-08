@@ -1,51 +1,34 @@
-// Build a Gujarati WhatsApp announcement for a vihar and open the share sheet.
+// Build the WhatsApp announcement for a vihar and open the share sheet. The
+// message itself is identical to main's "Copy to WhatsApp" format (full
+// Gujarati detail — main doesn't have an English variant of this message
+// either, it's always Gujarati regardless of the UI language toggle); the
+// only thing added on top is the app's RSVP join link at the bottom.
 import { Platform, Share } from "react-native";
 
 import { WEB_ORIGIN } from "@/src/core/config";
-import { formatDateLong, formatTime } from "@/src/core/vihar/utils";
+import { formatViharRecordForWhatsapp } from "@/src/core/vihar/whatsapp-format";
 import type { Vihar } from "@/src/shared/models";
 
 export function viharRsvpLink(vihar: Vihar): string {
   return `${WEB_ORIGIN}/vihar/${vihar.id}/rsvp`;
 }
 
-export function buildAnnouncement(vihar: Vihar, lang: "gu" | "en"): string {
-  const parts: string[] = [];
-  if (lang === "gu") {
-    parts.push("🙏 વિહાર સેવા 🙏");
-    parts.push(`રૂટ: ${vihar.route_no}`);
-    parts.push(`તારીખ: ${formatDateLong(vihar)}`);
-    parts.push(`સમય: ${formatTime(vihar, "gu")}`);
-    parts.push(`${vihar.from_upashray} → ${vihar.to_upashray} (${vihar.approx_kms} કિમી)`);
-    if (vihar.sadhu_bhagvant) parts.push(`સાધુજી: ${vihar.sadhu_bhagvant}`);
-    if (vihar.sadhviji_bhagvant) parts.push(`સાધ્વીજી: ${vihar.sadhviji_bhagvant}`);
-    if (vihar.wheelchair) parts.push(`વ્હીલચેર: ${vihar.wheelchair}`);
-    parts.push("");
-    parts.push("સેવામાં જોડાઓ 👇");
-    parts.push(viharRsvpLink(vihar));
-  } else {
-    parts.push("🙏 Vihar Seva 🙏");
-    parts.push(`Route: ${vihar.route_no}`);
-    parts.push(`Date: ${formatDateLong(vihar)}`);
-    parts.push(`Time: ${formatTime(vihar, "en")}`);
-    parts.push(`${vihar.from_upashray} → ${vihar.to_upashray} (${vihar.approx_kms} KM)`);
-    parts.push("");
-    parts.push("Join the seva 👇");
-    parts.push(viharRsvpLink(vihar));
-  }
-  return parts.join("\n");
+export function buildAnnouncement(vihar: Vihar): string {
+  return [formatViharRecordForWhatsapp(vihar), "", "સેવામાં જોડાઓ 👇", viharRsvpLink(vihar)].join("\n");
 }
 
-export async function shareAnnouncement(vihar: Vihar, lang: "gu" | "en"): Promise<void> {
-  const message = buildAnnouncement(vihar, lang);
+/** Opens the share sheet (native) or wa.me (web) with arbitrary text. */
+export async function shareText(message: string): Promise<void> {
   if (Platform.OS === "web") {
-    // Best-effort on web.
-    try {
-      // @ts-ignore navigator may exist on web
-      if (navigator?.share) await navigator.share({ text: message });
-      else await navigator.clipboard?.writeText(message);
-    } catch {}
+    // Open WhatsApp's own share link directly — navigator.share isn't
+    // available on most desktop browsers, and silently falling back to
+    // clipboard left the button looking like it did nothing.
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener");
     return;
   }
   await Share.share({ message });
+}
+
+export async function shareAnnouncement(vihar: Vihar): Promise<void> {
+  await shareText(buildAnnouncement(vihar));
 }

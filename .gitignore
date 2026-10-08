@@ -41,6 +41,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
+*.log
+
+# Claude Code session files
+.claude/
 
 # System files
 .DS_Store

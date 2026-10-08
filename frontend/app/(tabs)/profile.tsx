@@ -94,9 +94,17 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.block}>
+          <Row icon="account-edit" label={t("editProfile")} onPress={() => router.push("/profile/edit")} testID="profile-edit" />
+          <Row icon="lock-reset" label={t("changePassword")} onPress={() => router.push("/profile/change-password")} testID="profile-change-password" />
+        </View>
+
+        <View style={styles.block}>
           {isAdmin ? (
             <Row icon="shield-account" label={t("adminPanel")} onPress={() => router.push("/admin")} testID="profile-admin" />
           ) : null}
+          <Row icon="information-outline" label={t("aboutUs")} onPress={() => router.push("/about")} testID="profile-about" />
+          <Row icon="shield-lock-outline" label={t("privacyPolicy")} onPress={() => router.push("/privacy")} testID="profile-privacy" />
+          <Row icon="account-child-outline" label={t("childSafety")} onPress={() => router.push("/child-safety")} testID="profile-child-safety" />
           <Row icon="logout" label={t("logout")} onPress={onLogout} danger testID="profile-logout" />
         </View>
       </ScrollView>
