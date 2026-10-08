@@ -1,87 +1,89 @@
 # Release Checklist — Naranpura Vihar Seva (Android + iOS)
 
 Tracks what's left before this app (the `appdevelopment` branch, Expo/React
-Native) can be published to the Play Store / App Store. App code is being
-built first; this list is the infrastructure/setup work to do once that's
-ready. Check items off as they're done — don't start a step until its
-dependencies above it are done.
+Native) can be published to the Play Store / App Store.
 
-## 1. Backend deployment (blocks everything — do this first)
+## 1. Backend deployment — ✅ done
 
-- [ ] Deploy `backend/` (the companion proxy + push relay) somewhere public
-      (Vercel/Railway/Render/etc.) — it currently only runs on this dev
-      machine at `localhost:8000`, which a real phone can never reach.
-- [ ] Update `frontend/.env`'s `EXPO_PUBLIC_BACKEND_URL` to that public URL
-      (currently `http://localhost:8000` — must change before any build).
-- [ ] Confirm the deployed backend can still reach the real production API
-      (`UPSTREAM_API_URL`, defaults to `https://viharsevagroup.vercel.app/api`)
-      — no code change needed, just verify network access from the new host.
+- [x] `backend/` deployed to Vercel: **https://backend-sigma-eosin-15.vercel.app**
+      (account: mananshah3654). Verified `/api/health` responds and proxies
+      correctly to the real production API.
+- [x] `frontend/.env`'s `EXPO_PUBLIC_BACKEND_URL` updated to that URL.
+- [x] Trimmed `backend/requirements.txt` to only what `server.py` actually
+      imports (it had unused pandas/numpy/boto3/motor/mypy/etc. bloating the
+      serverless bundle for no reason).
+- [x] Deleted `backend/test.py` — a stray local-only script with a **live
+      MongoDB connection string hardcoded in plaintext**. It was never
+      committed to git (confirmed via `git log`), so no history to scrub, but
+      if that password was ever exposed elsewhere, consider rotating it.
 
-## 2. Push notifications
+## 2. Push notifications — code done, device testing still needs a real build
 
-Uses Expo's own push service (`https://exp.host/--/api/v2/push/send`) — no
-third-party account/key (no Emergent, no OneSignal). `backend/server.py`
-stores each user's Expo push token in memory (resets on backend restart —
-acceptable since the app re-registers on every open) and forwards
-`/push/notify` calls straight to Expo.
+Uses Expo's own push service — no third-party account/key (no Emergent, no
+OneSignal).
 
-- [ ] Run `eas build:configure` at least once (see §4) — this writes the
-      project's EAS `projectId` into `app.json`'s `extra.eas.projectId`,
-      which `src/core/push/register.ts` needs to request an Expo push token.
-      Until then, push registration silently no-ops (by design, not a bug).
-- [ ] Android: nothing else required — Expo's push service relays to FCM
-      using its own Firebase project, not yours.
-- [ ] iOS: still need an Apple Push Notification service (APNs) key uploaded
-      to EAS's credentials manager — Apple requires this regardless of which
-      push service sits behind it.
-- [ ] Re-test "Send Reminder" (admin → participants screen) and the
-      register-on-login flow once the above is in place — push is a no-op on
-      web by design, so this can only be verified on a real device build.
-- [ ] If token persistence across backend restarts ever matters at scale,
-      swap the in-memory `_push_tokens` dict for a small persistent store
-      (file/Redis/Mongo) — not needed at current volume.
+- [x] `eas build:configure` equivalent done — EAS project
+      `@mananshah3654/frontend` (id `34d550f9-ea01-4ba2-8c3c-5dead432f447`)
+      linked in `app.json`'s `extra.eas.projectId`.
+- [x] Android: nothing else required — Expo's push service relays to FCM
+      using its own Firebase project.
+- [ ] iOS: still needs an Apple Push Notification service (APNs) key — blocked
+      on item 4 (no Apple Developer account yet).
+- [ ] Re-test "Send Reminder" and register-on-login once a real device build
+      is installed — push is a no-op on web by design.
 
-## 3. Deep links (WhatsApp RSVP link opening the app directly)
+## 3. Deep links — ✅ functionally done (custom domain still optional)
 
-- [ ] Decide the real public web destination (or confirm native-only):
-      `frontend/src/core/config.ts`'s `WEB_ORIGIN` still points at the *old*
-      production CRA site (`https://viharsevagroup.vercel.app`), which has no
-      `/vihar/:id/rsvp` route — today this link goes nowhere useful on any
-      platform.
-- [ ] Host `assetlinks.json` at
-      `https://naranpuraviharsevagroup.com/.well-known/assetlinks.json`
-      (Android App Links) and `apple-app-site-association` at
-      `https://naranpuraviharsevagroup.com/.well-known/apple-app-site-association`
-      (iOS Universal Links) — Expo/EAS can generate the content, hosting is
-      on whoever controls that domain.
-- [ ] Update `WEB_ORIGIN` to that domain once the association files are live,
-      so WhatsApp announcement links open the native app instead of a
-      browser (or a dead page).
+- [x] `WEB_ORIGIN` and the Android `intentFilters` / iOS `associatedDomains`
+      now point at **frontend-brown-seven-59cc4o771d.vercel.app** — this
+      app's own deployed web build — instead of main's old CRA site (which
+      had no matching route) or an unhosted custom domain.
+- [x] `frontend/public/.well-known/assetlinks.json` scaffolded and confirmed
+      served live at `https://frontend-brown-seven-59cc4o771d.vercel.app/.well-known/assetlinks.json`.
+- [ ] **One manual step left**: fill in the real `sha256_cert_fingerprints`
+      value in that file. Run `eas credentials` → Android → select the
+      `production` keystore → it prints the SHA256 fingerprint. This command
+      is fully interactive (no `--json`/`--non-interactive` output exists),
+      so it needs to be run from a real terminal, not this automated session.
+      Paste the value in, then redeploy (`cd frontend && vercel --prod`).
+- [ ] iOS Universal Links (`apple-app-site-association`) blocked on having an
+      Apple Team ID — do this once item 4's Apple account exists.
+- [ ] If `naranpuraviharsevagroup.com` ever gets real hosting, point it at
+      the same content (or redirect to the Vercel URL) and add it back as
+      the primary domain — it's already listed as a secondary
+      associatedDomain/intentFilter so this is a drop-in swap later.
 
-## 4. EAS build & signing
+## 4. EAS build & signing — Android in progress, iOS blocked
 
-- [ ] Create/confirm an Expo account for this project; run `eas login`.
-- [ ] `eas build:configure` to generate `eas.json`.
-- [ ] Android: let EAS generate/manage the signing keystore (or provide one).
-- [ ] iOS: an Apple Developer Program account is required ($99/yr) — EAS can
-      manage certificates/provisioning once that account exists.
-- [ ] First build: `eas build --platform android` / `--platform ios`,
-      install on a real device via the generated `.apk`/TestFlight, and
-      smoke-test the full flow (login, join seva, admin create/edit vihar,
-      WhatsApp share, reports download) end-to-end on-device.
+- [x] Expo account created & logged in (`mananshah3654`).
+- [x] `eas.json` created (development/preview/production build profiles).
+- [x] Android signing keystore generated by EAS (`Build Credentials tiZ3SHnn7p`).
+- [x] **Found and fixed a real cross-platform bug** that was silently
+      breaking every cloud build/deploy: `package.json`'s `preinstall` script
+      invoked `./scripts/cmd-guard.js` directly, relying on its Unix
+      executable bit — which Windows can't express when uploading to a Linux
+      build host, so every Vercel/EAS build failed at `npm install` with a
+      permission error. Fixed by invoking it via `node ./scripts/cmd-guard.js`
+      instead (matching how the repo's other scripts already call it).
+- [ ] First Android production build running now via
+      `eas build --platform android --profile production` — check status
+      with `eas build:list` or the Expo dashboard. Once it finishes, download
+      the `.apk`/`.aab` and smoke-test on a real device: login, join seva,
+      admin create/edit vihar, WhatsApp share, reports download.
+- [ ] iOS: **blocked — no Apple Developer Program account yet** ($99/yr,
+      developer.apple.com). Once that exists, EAS can manage
+      certificates/provisioning and an iOS build can be triggered the same
+      way.
 
 ## 5. Store listing requirements
 
-- [ ] App icon / splash — already done (real VSG logo wired into
-      `app.json`'s `icon`/`adaptiveIcon`/`splash` paths).
-- [ ] Privacy Policy — in-app at `/privacy`; Play Console also wants a public
-      URL to the same content (can point to the hosted domain once #3 is
-      resolved, or host the content as a static page separately).
-- [ ] Child Safety Standards — in-app at `/child-safety`; same public-URL
-      consideration as Privacy Policy (Play Store's CSAE policy may require
-      this reachable outside the app too).
+- [x] App icon / splash — real VSG logo wired into `app.json`.
+- [x] Privacy Policy content — in-app at `/privacy`, also publicly reachable
+      at `https://frontend-brown-seven-59cc4o771d.vercel.app/privacy` now
+      that the web build is deployed.
+- [x] Child Safety Standards — same, at `/child-safety`.
 - [ ] Screenshots, store description, content rating questionnaire — not
-      started.
+      started (needs the Play Console account itself).
 - [ ] Data safety form (Play Console) / App Privacy details (App Store
       Connect) — describe what's actually collected: phone, name, area,
       blood group, emergency contact, DOB, optional photo (see `/privacy`
@@ -89,10 +91,17 @@ acceptable since the app re-registers on every open) and forwards
 
 ## Known gaps carried over from the web-only testing phase
 
-- "Today's vihar not showing" — reported but not yet root-caused; needs
+- "Today's vihar not showing" — reported but never root-caused; still needs
   either a test login or the specific vihar's route/date to debug against
-  the live database (see conversation history — this is still open).
+  the live database. Not revisited since being raised.
 - `main` (the old CRA web app) and this branch now have fully diverged
   feature sets; the 30+ commits on `main` (password reset, vihar splitting,
   privacy/child-safety pages, etc.) have all been re-implemented here, but
   there's no automatic sync between the two going forward.
+
+## Live URLs (this session)
+
+- Backend (API proxy): https://backend-sigma-eosin-15.vercel.app
+- Frontend (web build): https://frontend-brown-seven-59cc4o771d.vercel.app
+- Vercel account: mananshah3654 (manans-projects-b74175de)
+- Expo/EAS account: mananshah3654 (@mananshah3654/frontend)
