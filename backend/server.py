@@ -139,7 +139,8 @@ class User(BaseModel):
 class Vihar(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    route_no: str
+    route_no: str  # Resets to 1 each vihar season (Aug 1 - Jul 31)
+    total_no: str = ""  # Lifetime sequence number across all seasons, never resets
     gujarati_date: str = ""  # Optional field (removed from form)
     sahebji_name: str = ""  # Sadhu Bhagvant name (optional field, defaults to empty string)
     vihar_date: str
@@ -227,7 +228,8 @@ class UserUpdate(BaseModel):
     date_of_birth: Optional[str] = None
 
 class ViharCreate(BaseModel):
-    route_no: Optional[str] = None  # Optional - auto-generated if not provided, but can be manually set
+    route_no: Optional[str] = None  # Optional - auto-generated (season-scoped) if not provided, but can be manually set
+    total_no: Optional[str] = None  # Optional - auto-generated (lifetime) if not provided
     gujarati_date: str = ""  # Optional field (removed from form)
     sahebji_name: str = ""  # Sadhu Bhagvant name (optional field)
     vihar_date: str
@@ -766,34 +768,93 @@ def parse_whatsapp_message(message: str) -> dict:
         raise
 
 # Vihar Routes
-async def _get_max_route_no() -> int:
-    """Efficiently find the highest numeric route_no using aggregation (single DB round-trip)."""
+def _parse_vihar_date(s: Optional[str]):
+    """Parse a vihar_date string (dd/mm/yy, dd/mm/yyyy, or yyyy-mm-dd) into a date. Returns None if unparseable."""
+    if not s:
+        return None
+    parts = re.split(r"[/\-.]", s.strip())
+    if len(parts) < 3:
+        return None
+    try:
+        nums = [int(p) for p in parts]
+    except ValueError:
+        return None
+    if len(parts[0]) == 4:
+        y, m, d = nums
+    else:
+        d, m, y = nums
+        if y < 100:
+            y += 2000
+    try:
+        return datetime(y, m, d).date()
+    except ValueError:
+        return None
+
+
+def _vihar_season_bounds(d) -> tuple:
+    """Season runs Aug 1 - Jul 31; returns (start_date, end_date) for the season containing d."""
+    from datetime import date
+    start_year = d.year - 1 if d.month <= 7 else d.year
+    return date(start_year, 8, 1), date(start_year + 1, 7, 31)
+
+
+async def _get_max_route_no(vihar_date: Optional[str] = None) -> int:
+    """Highest numeric route_no among vihars in the same season as vihar_date (defaults to today's season)."""
+    ref_date = _parse_vihar_date(vihar_date) or datetime.now(timezone.utc).date()
+    season_start, season_end = _vihar_season_bounds(ref_date)
+
+    cursor = db.vihars.find({}, {"route_no": 1, "vihar_date": 1, "_id": 0})
+    max_no = 0
+    async for doc in cursor:
+        d = _parse_vihar_date(doc.get("vihar_date"))
+        if d is None or not (season_start <= d <= season_end):
+            continue
+        try:
+            n = int(doc.get("route_no") or 0)
+        except (TypeError, ValueError):
+            continue
+        if n > max_no:
+            max_no = n
+    return max_no
+
+
+async def _get_max_total_no() -> int:
+    """Efficiently find the highest numeric total_no across all vihars ever (single DB round-trip)."""
     pipeline = [
-        {"$project": {"route_no_int": {"$convert": {"input": "$route_no", "to": "int", "onError": 0, "onNull": 0}}}},
-        {"$group": {"_id": None, "max": {"$max": "$route_no_int"}}},
+        {"$project": {"total_no_int": {"$convert": {"input": "$total_no", "to": "int", "onError": 0, "onNull": 0}}}},
+        {"$group": {"_id": None, "max": {"$max": "$total_no_int"}}},
     ]
     result = await db.vihars.aggregate(pipeline).to_list(1)
     return result[0]["max"] if result else 0
 
 @api_router.get("/vihars/next-route-number")
-async def get_next_route_number():
-    """Get the next auto-incremented route number"""
+async def get_next_route_number(vihar_date: Optional[str] = None):
+    """Get the next auto-incremented route number (season-scoped) and total number (lifetime)."""
     try:
-        max_route_no = await _get_max_route_no()
-        return {"next_route_number": str(max_route_no + 1)}
+        max_route_no = await _get_max_route_no(vihar_date)
+        max_total_no = await _get_max_total_no()
+        return {
+            "next_route_number": str(max_route_no + 1),
+            "next_total_number": str(max_total_no + 1),
+        }
     except Exception as e:
         logger.error(f"Error getting next route number: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @api_router.post("/vihars", dependencies=[Depends(get_admin_user)])
 async def create_vihar(vihar_data: ViharCreate, request: Request, admin: dict = Depends(get_admin_user)):
-    """Create new vihar (Admin only) - route_no is auto-generated"""
+    """Create new vihar (Admin only) - route_no (season-scoped) and total_no (lifetime) are auto-generated"""
     try:
-        # Auto-generate route_no if not provided
+        # Auto-generate route_no (resets each vihar season) if not provided
         if not vihar_data.route_no:
-            max_route_no = await _get_max_route_no()
+            max_route_no = await _get_max_route_no(vihar_data.vihar_date)
             vihar_data.route_no = str(max_route_no + 1)
-        
+
+        # Auto-generate total_no (never resets) if not provided
+        if not vihar_data.total_no:
+            max_total_no = await _get_max_total_no()
+            vihar_data.total_no = str(max_total_no + 1)
+
         # Get client IP
         client_ip = request.client.host if request.client else None
         # Try to get real IP from headers (for proxies)
@@ -840,10 +901,12 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request,
         if not existing_vihar:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vihar not found")
         
-        # If route_no is not provided in update, preserve the original
+        # If route_no/total_no are not provided in update, preserve the originals
         if not vihar_data.route_no:
             vihar_data.route_no = existing_vihar.get("route_no")
-        
+        if not vihar_data.total_no:
+            vihar_data.total_no = existing_vihar.get("total_no") or ""
+
         # Get client IP
         client_ip = request.client.host if request.client else None
         # Try to get real IP from headers (for proxies)
