@@ -242,6 +242,10 @@ export const T: Dict = {
   assignViharSevak: { gu: "વિહાર સેવક સોંપો", en: "Assign Vihar Sevak" },
   filterByDate: { gu: "તારીખ પ્રમાણે ફિલ્ટર કરો", en: "Filter by date" },
   clearFilter: { gu: "ફિલ્ટર હટાવો", en: "Clear filter" },
+  preview: { gu: "જુઓ", en: "Preview" },
+  assign: { gu: "સોંપો", en: "Assign" },
+  edit: { gu: "સંપાદિત કરો", en: "Edit" },
+  share: { gu: "શેર કરો", en: "Share" },
 };
 
 interface I18nState {
