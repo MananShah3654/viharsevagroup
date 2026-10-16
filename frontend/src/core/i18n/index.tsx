@@ -246,6 +246,7 @@ export const T: Dict = {
   assign: { gu: "સોંપો", en: "Assign" },
   edit: { gu: "સંપાદિત કરો", en: "Edit" },
   share: { gu: "શેર કરો", en: "Share" },
+  totalNo: { gu: "કુલ ક્રમાંક", en: "Total No." },
 };
 
 interface I18nState {

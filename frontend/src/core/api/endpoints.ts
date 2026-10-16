@@ -75,8 +75,9 @@ export function getReport(period: "weekly" | "monthly" | "yearly", userId?: stri
 }
 
 // ---- Admin ----
-export function nextRouteNumber() {
-  return apiRequest<{ next_route_number: string }>("/vihars/next-route-number");
+export function nextRouteNumber(viharDate?: string) {
+  const q = viharDate ? `?vihar_date=${encodeURIComponent(viharDate)}` : "";
+  return apiRequest<{ next_route_number: string; next_total_number: string }>(`/vihars/next-route-number${q}`);
 }
 
 export function createVihar(payload: Partial<Vihar>) {

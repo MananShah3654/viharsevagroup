@@ -41,13 +41,6 @@ export function ViharForm({ initialVihar }: Props) {
   const qc = useQueryClient();
   const isEdit = !!initialVihar;
 
-  const nextRoute = useQuery({
-    queryKey: ["nextRoute"],
-    queryFn: () => api.nextRouteNumber(),
-    enabled: !isEdit,
-  });
-  const routePlaceholder = isEdit ? initialVihar!.route_no : nextRoute.data?.next_route_number ?? "";
-
   const [routeNo, setRouteNo] = useState(initialVihar?.route_no ?? "");
   const [splitMode, setSplitMode] = useState(false);
   const [leg, setLeg] = useState<LegValue>(
@@ -61,6 +54,17 @@ export function ViharForm({ initialVihar }: Props) {
         }
       : makeEmptyLeg(),
   );
+
+  // Season-scoped route number and lifetime total number depend on which
+  // date the vihar actually falls on, so refetch whenever that date changes
+  // (route_no resets each vihar season; total_no never does).
+  const nextRoute = useQuery({
+    queryKey: ["nextRoute", leg.vihar_date],
+    queryFn: () => api.nextRouteNumber(leg.vihar_date || undefined),
+    enabled: !isEdit,
+  });
+  const routePlaceholder = isEdit ? initialVihar!.route_no : nextRoute.data?.next_route_number ?? "";
+  const totalPlaceholder = isEdit ? initialVihar!.total_no ?? "" : nextRoute.data?.next_total_number ?? "";
   const [legs, setLegs] = useState<LegValue[]>([makeEmptyLeg(), makeEmptyLeg()]);
   const [shared, setShared] = useState<SharedValue>({
     sahebji_name: initialVihar?.sahebji_name ?? "",
@@ -174,8 +178,12 @@ export function ViharForm({ initialVihar }: Props) {
           ...legPayload(leg),
         });
       } else {
+        // Only send route_no when the admin manually typed an override —
+        // otherwise let the server auto-generate it (season-scoped) at
+        // submit time, since the previewed placeholder can go stale if the
+        // date was changed after the preview loaded.
         created = await api.createVihar({
-          route_no: routeNo || routePlaceholder || undefined,
+          ...(routeNo ? { route_no: routeNo } : {}),
           ...sharedPayload(),
           ...legPayload(leg),
         });
@@ -218,6 +226,11 @@ export function ViharForm({ initialVihar }: Props) {
         placeholder={routePlaceholder}
         testID="vihar-route-no"
       />
+      {totalPlaceholder ? (
+        <Txt size={13} color={colors.muted} testID="vihar-total-no">
+          {t("totalNo")}: {totalPlaceholder}
+        </Txt>
+      ) : null}
 
       {!isEdit ? (
         <Pressable

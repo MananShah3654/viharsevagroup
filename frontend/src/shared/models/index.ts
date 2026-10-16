@@ -20,7 +20,8 @@ export interface User {
 
 export interface Vihar {
   id: string;
-  route_no: string;
+  route_no: string; // resets to 1 each vihar season (Aug 1 - Jul 31)
+  total_no?: string; // lifetime sequence number across all seasons, never resets
   gujarati_date?: string;
   sahebji_name?: string;
   vihar_date: string; // dd/mm/yy

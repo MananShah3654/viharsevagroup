@@ -69,6 +69,10 @@ export function AdminViharCard({ vihar }: { vihar: Vihar }) {
           </Txt>
         </View>
         <View style={styles.flex}>
+          <Txt size={11.5} color={colors.muted}>
+            {t("routeNo")} {vihar.route_no}
+            {vihar.total_no ? `  ·  ${t("totalNo")} ${vihar.total_no}` : ""}
+          </Txt>
           <Txt w="700" size={fontSize.base} color={colors.onSurface} numberOfLines={1}>
             {vihar.from_upashray} → {vihar.to_upashray}
           </Txt>
