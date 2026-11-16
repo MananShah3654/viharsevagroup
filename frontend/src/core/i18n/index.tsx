@@ -247,6 +247,12 @@ export const T: Dict = {
   edit: { gu: "સંપાદિત કરો", en: "Edit" },
   share: { gu: "શેર કરો", en: "Share" },
   totalNo: { gu: "કુલ ક્રમાંક", en: "Total No." },
+  originalNo: { gu: "મૂળ ક્રમાંક", en: "Original no." },
+  yearlyNo: { gu: "વાર્ષિક ક્રમાંક", en: "Yearly no." },
+  numberingNote: {
+    gu: "મૂળ ક્રમાંક સતત ચાલે છે. વાર્ષિક ક્રમાંક દર વર્ષે ૧ ઑગસ્ટથી ફરી ૧ થાય છે.",
+    en: "Original numbers continue across all years. Yearly numbers restart at 1 every August 1.",
+  },
 };
 
 interface I18nState {

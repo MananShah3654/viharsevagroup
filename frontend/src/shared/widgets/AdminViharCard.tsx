@@ -11,6 +11,7 @@ import { shareAnnouncement } from "@/src/core/share/whatsapp";
 import { formatDateShort, joinedCount, volunteerTarget } from "@/src/core/vihar/utils";
 import { Icon } from "@/src/shared/widgets/Icon";
 import { Txt } from "@/src/shared/widgets/Txt";
+import { ViharNumbers } from "@/src/shared/widgets/ViharNumbers";
 import type { Vihar } from "@/src/shared/models";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
@@ -69,10 +70,7 @@ export function AdminViharCard({ vihar }: { vihar: Vihar }) {
           </Txt>
         </View>
         <View style={styles.flex}>
-          <Txt size={11.5} color={colors.muted}>
-            {t("routeNo")} {vihar.route_no}
-            {vihar.total_no ? `  ·  ${t("totalNo")} ${vihar.total_no}` : ""}
-          </Txt>
+          <ViharNumbers vihar={vihar} />
           <Txt w="700" size={fontSize.base} color={colors.onSurface} numberOfLines={1}>
             {vihar.from_upashray} → {vihar.to_upashray}
           </Txt>

@@ -11,6 +11,7 @@ import * as api from "@/src/core/api/endpoints";
 import { useI18n } from "@/src/core/i18n";
 import { ApiError, OfflineError } from "@/src/core/api/client";
 import { qk } from "@/src/core/vihar/hooks";
+import { parseViharDate, viharYearLabel } from "@/src/core/vihar/utils";
 import { formatViharForWhatsapp } from "@/src/core/vihar/whatsapp-format";
 import { shareText, viharRsvpLink } from "@/src/core/share/whatsapp";
 import { Button } from "@/src/shared/widgets/Button";
@@ -65,6 +66,8 @@ export function ViharForm({ initialVihar }: Props) {
   });
   const routePlaceholder = isEdit ? initialVihar!.route_no : nextRoute.data?.next_route_number ?? "";
   const totalPlaceholder = isEdit ? initialVihar!.total_no ?? "" : nextRoute.data?.next_total_number ?? "";
+  const numberingDate = parseViharDate(leg.vihar_date);
+  const numberingSeason = numberingDate ? viharYearLabel(numberingDate) : "";
   const [legs, setLegs] = useState<LegValue[]>([makeEmptyLeg(), makeEmptyLeg()]);
   const [shared, setShared] = useState<SharedValue>({
     sahebji_name: initialVihar?.sahebji_name ?? "",
@@ -104,7 +107,7 @@ export function ViharForm({ initialVihar }: Props) {
   };
 
   const onCopyToWhatsapp = async () => {
-    const message = formatViharForWhatsapp({ route_no: routeNo || routePlaceholder, ...shared, ...leg });
+    const message = formatViharForWhatsapp({ route_no: routeNo || routePlaceholder, total_no: totalPlaceholder || undefined, ...shared, ...leg });
     await Clipboard.setStringAsync(message);
     toast.show(t("copiedToClipboard"), "success");
   };
@@ -208,6 +211,7 @@ export function ViharForm({ initialVihar }: Props) {
       // what's on screen.
       const message = formatViharForWhatsapp({
         route_no: created.route_no || routeNo || routePlaceholder,
+        total_no: created.total_no,
         ...shared,
         ...leg,
       });
@@ -218,19 +222,22 @@ export function ViharForm({ initialVihar }: Props) {
 
   return (
     <View style={styles.wrap}>
-      <FormField
-        label={`${t("routeNo")} (${routePlaceholder})`}
-        value={routeNo}
-        onChange={setRouteNo}
-        keyboardType="number-pad"
-        placeholder={routePlaceholder}
-        testID="vihar-route-no"
-      />
-      {totalPlaceholder ? (
-        <Txt size={13} color={colors.muted} testID="vihar-total-no">
-          {t("totalNo")}: {totalPlaceholder}
-        </Txt>
-      ) : null}
+      <View style={styles.numberColumns}>
+        <View style={styles.numberColumn}>
+          <Txt w="500" size={15} color={colors.onSurfaceTertiary}>{t("originalNo")}</Txt>
+          <Txt w="700" size={18} testID="vihar-total-no">{totalPlaceholder || "—"}</Txt>
+        </View>
+        <FormField
+          label={`${t("yearlyNo")}${numberingSeason ? ` (${numberingSeason})` : ""}`}
+          value={routeNo}
+          onChange={setRouteNo}
+          keyboardType="number-pad"
+          placeholder={routePlaceholder}
+          testID="vihar-route-no"
+          style={styles.numberColumn}
+        />
+      </View>
+      <Txt size={12} color={colors.muted}>{t("numberingNote")}</Txt>
 
       {!isEdit ? (
         <Pressable
@@ -298,6 +305,8 @@ export function ViharForm({ initialVihar }: Props) {
 
 const useStyles = makeStyles((colors) => ({
   wrap: { gap: spacing.md },
+  numberColumns: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
+  numberColumn: { flex: 1, minWidth: 0, gap: spacing.xs },
   splitToggle: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xs },
   stageCard: {
     backgroundColor: colors.surfaceTertiary,

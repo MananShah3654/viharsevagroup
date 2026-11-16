@@ -11,6 +11,7 @@ import { CountPills } from "@/src/shared/widgets/CountPills";
 import { Icon } from "@/src/shared/widgets/Icon";
 import { ProgressBar } from "@/src/shared/widgets/ProgressBar";
 import { Txt } from "@/src/shared/widgets/Txt";
+import { ViharNumbers } from "@/src/shared/widgets/ViharNumbers";
 import type { Vihar } from "@/src/shared/models";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
 
@@ -60,6 +61,8 @@ export function TodayViharCard({
             </Txt>
           </View>
         </View>
+
+        <ViharNumbers vihar={vihar} onDark />
 
         <View style={styles.route}>
           <Txt w="700" size={fontSize.xl} color="#FFFFFF" numberOfLines={1}>

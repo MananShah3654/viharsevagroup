@@ -1,4 +1,4 @@
-// Chip filter for the vihar "season" (Nov-Jul, labeled "25-26" style).
+// Chip filter for the Vihar year (August-July, labeled "25-26" style).
 // Renders nothing only when there's no dated vihar data at all yet — stays
 // visible even for a single season so "All" is always reachable (callers
 // default `value` to the current season via currentViharYear()).

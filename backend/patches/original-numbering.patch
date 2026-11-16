@@ -1,0 +1,57 @@
+diff --git a/backend/server.py b/backend/server.py
+index 1091821..97afb4e 100644
+--- a/backend/server.py
++++ b/backend/server.py
+@@ -821,7 +821,14 @@ async def _get_max_route_no(vihar_date: Optional[str] = None) -> int:
+ async def _get_max_total_no() -> int:
+     """Efficiently find the highest numeric total_no across all vihars ever (single DB round-trip)."""
+     pipeline = [
+-        {"$project": {"total_no_int": {"$convert": {"input": "$total_no", "to": "int", "onError": 0, "onNull": 0}}}},
++        # Legacy records may still store their original number only in route_no.
++        {"$project": {"total_no_int": {"$convert": {
++            "input": {"$cond": [
++                {"$eq": [{"$ifNull": ["$total_no", ""]}, ""]},
++                "$route_no", "$total_no",
++            ]},
++            "to": "int", "onError": 0, "onNull": 0,
++        }}}},
+         {"$group": {"_id": None, "max": {"$max": "$total_no_int"}}},
+     ]
+     result = await db.vihars.aggregate(pipeline).to_list(1)
+@@ -904,8 +911,8 @@ async def update_vihar(vihar_id: str, vihar_data: ViharCreate, request: Request,
+         # If route_no/total_no are not provided in update, preserve the originals
+         if not vihar_data.route_no:
+             vihar_data.route_no = existing_vihar.get("route_no")
+-        if not vihar_data.total_no:
+-            vihar_data.total_no = existing_vihar.get("total_no") or ""
++        # Once assigned, the original number stays fixed when editing a Vihar.
++        vihar_data.total_no = existing_vihar.get("total_no") or vihar_data.total_no or ""
+ 
+         # Get client IP
+         client_ip = request.client.host if request.client else None
+@@ -1035,7 +1042,15 @@ async def get_all_vihars(
+     # Optimized: Use aggregation pipeline for better performance
+     # This combines vihars and participations in a single query
+     pipeline = [
+-        {"$sort": {"route_no": -1}},  # Sort by route number descending
++        # Yearly route numbers restart, so paginate by the original number.
++        {"$addFields": {"_original_number": {"$convert": {
++            "input": {"$cond": [
++                {"$eq": [{"$ifNull": ["$total_no", ""]}, ""]},
++                "$route_no", "$total_no",
++            ]},
++            "to": "int", "onError": 0, "onNull": 0,
++        }}}},
++        {"$sort": {"_original_number": -1, "created_at": -1, "id": 1}},
+         {"$skip": skip},
+         {"$limit": limit},
+         {
+@@ -1065,7 +1080,7 @@ async def get_all_vihars(
+                 }
+             }
+         },
+-        {"$project": {"_id": 0, "user_participation": 0}}
++        {"$project": {"_id": 0, "user_participation": 0, "_original_number": 0}}
+     ]
+     
+     vihars = await db.vihars.aggregate(pipeline).to_list(limit)

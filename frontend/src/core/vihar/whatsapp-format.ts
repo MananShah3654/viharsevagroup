@@ -4,7 +4,7 @@
 // appends the app's RSVP join link to this same message for every share
 // action (list share button, participants screen, post-create auto-share) —
 // so the message is identical to main's, plus one link at the bottom.
-import { parseViharDate } from "@/src/core/vihar/utils";
+import { parseViharDate, viharYearLabel } from "@/src/core/vihar/utils";
 import type { Vihar } from "@/src/shared/models";
 
 const GUJARATI_DIGITS = ["૦", "૧", "૨", "૩", "૪", "૫", "૬", "૭", "૮", "૯"];
@@ -62,6 +62,7 @@ function formatGujaratiTime(timeString: string): string {
 
 export interface WhatsappFormatInput {
   route_no: string;
+  total_no?: string;
   sahebji_name: string;
   vihar_date: string;
   vihar_time: string;
@@ -80,6 +81,8 @@ export interface WhatsappFormatInput {
 
 export function formatViharForWhatsapp(form: WhatsappFormatInput): string {
   const routeNo = toGujaratiNumeral(form.route_no || "0");
+  const viharDate = parseViharDate(form.vihar_date);
+  const season = viharDate ? viharYearLabel(viharDate) : "";
   const dayOfWeek = form.vihar_date ? getGujaratiDay(form.vihar_date) : "";
   const gujaratiTime = formatGujaratiTime(form.vihar_time);
 
@@ -104,7 +107,8 @@ export function formatViharForWhatsapp(form: WhatsappFormatInput): string {
   const lines: string[] = [
     "*પ્રણામ🙏🏻 વિહાર સેવકો*",
     "",
-    `*રૂટ- ${routeNo}*`,
+    ...(form.total_no ? [`*મૂળ ક્રમાંક- ${toGujaratiNumeral(form.total_no)}*`] : []),
+    `*વાર્ષિક રૂટ- ${routeNo}${season ? ` (${season})` : ""}*`,
     "*વિહાર ની વિગત: -*",
     `*સાહેબજી નું નામ -* ${form.sahebji_name || ""}`,
     `*વિહાર તારીખ-* ${formattedDate},`,
@@ -156,6 +160,7 @@ export function formatViharForWhatsapp(form: WhatsappFormatInput): string {
 export function formatViharRecordForWhatsapp(vihar: Vihar): string {
   return formatViharForWhatsapp({
     route_no: vihar.route_no,
+    total_no: vihar.total_no,
     sahebji_name: vihar.sahebji_name ?? "",
     vihar_date: vihar.vihar_date,
     vihar_time: vihar.vihar_time,

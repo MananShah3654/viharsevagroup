@@ -21,6 +21,7 @@ import { OfflineBanner } from "@/src/shared/widgets/OfflineBanner";
 import { ProgressBar } from "@/src/shared/widgets/ProgressBar";
 import { ErrorView, LoadingView } from "@/src/shared/widgets/StateViews";
 import { Txt } from "@/src/shared/widgets/Txt";
+import { ViharNumbers } from "@/src/shared/widgets/ViharNumbers";
 import { useConfirm } from "@/src/shared/widgets/Confirm";
 import { useToast } from "@/src/shared/widgets/Toast";
 import { fontSize, makeStyles, radius, spacing, useTheme } from "@/src/theme";
@@ -147,6 +148,8 @@ export default function ViharDetailScreen() {
             contentContainerStyle={[styles.content, { paddingBottom: ctaHeight + spacing.xl }]}
             showsVerticalScrollIndicator={false}
           >
+            <ViharNumbers vihar={vihar} />
+
             <View style={styles.routeCard}>
               <Txt w="700" size={fontSize.xxl} color={colors.onSurface} numberOfLines={2}>
                 {vihar.from_upashray}

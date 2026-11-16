@@ -7,6 +7,7 @@ import { useI18n } from "@/src/core/i18n";
 import { formatDateShort, formatTime } from "@/src/core/vihar/utils";
 import { Icon } from "@/src/shared/widgets/Icon";
 import { Txt } from "@/src/shared/widgets/Txt";
+import { ViharNumbers } from "@/src/shared/widgets/ViharNumbers";
 import type { Vihar } from "@/src/shared/models";
 
 export function ViharRow({ vihar, onPress }: { vihar: Vihar; onPress: () => void }) {
@@ -31,6 +32,7 @@ export function ViharRow({ vihar, onPress }: { vihar: Vihar; onPress: () => void
       </View>
 
       <View style={styles.body}>
+        <ViharNumbers vihar={vihar} />
         <View style={styles.routeLine}>
           <Txt w="700" size={16} color={colors.onSurface} numberOfLines={1} style={styles.flex}>
             {vihar.from_upashray}
