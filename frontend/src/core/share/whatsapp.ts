@@ -10,7 +10,8 @@ import { formatViharRecordForWhatsapp } from "@/src/core/vihar/whatsapp-format";
 import type { Vihar } from "@/src/shared/models";
 
 export function viharRsvpLink(vihar: Vihar): string {
-  return `${WEB_ORIGIN}/vihar/${vihar.id}/rsvp`;
+  // Short link: first 8 characters of the id (resolved by app/r/[code].tsx).
+  return `${WEB_ORIGIN}/r/${vihar.id.slice(0, 8)}`;
 }
 
 export function buildAnnouncement(vihar: Vihar): string {

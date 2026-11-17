@@ -11,7 +11,7 @@ export const PUSH_API = `${process.env.EXPO_PUBLIC_BACKEND_URL ?? ""}/api`;
 // no matching /vihar/:id/rsvp route) — swap to the real custom domain once
 // naranpuraviharsevagroup.com is actually hosting this app and its
 // assetlinks.json/apple-app-site-association files (see RELEASE_CHECKLIST.md).
-export const WEB_ORIGIN = "https://frontend-brown-seven-59cc4o771d.vercel.app";
+export const WEB_ORIGIN = "https://www.naranpuraviharsevagroup.com";
 
 export const STORAGE_KEYS = {
   token: "vsg.auth.token",

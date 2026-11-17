@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.emergent.sevaapp.vsx3ow",
       "associatedDomains": [
         "applinks:frontend-brown-seven-59cc4o771d.vercel.app",
-        "applinks:naranpuraviharsevagroup.com"
+        "applinks:naranpuraviharsevagroup.com",
+        "applinks:www.naranpuraviharsevagroup.com"
       ],
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "Get reminders for your upcoming vihar seva"
@@ -41,6 +42,15 @@
               "scheme": "https",
               "host": "naranpuraviharsevagroup.com",
               "pathPrefix": "/vihar"
+            },
+            {
+              "scheme": "https",
+              "host": "www.naranpuraviharsevagroup.com",
+              "pathPrefix": "/vihar"
+            },
+            {
+              "scheme": "https",
+              "pathPrefix": "/r"
             }
           ],
           "category": [
