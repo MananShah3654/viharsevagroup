@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Image } from "expo-image";
@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const insets = useSafeAreaInsets();
 
   const [phone, setPhone] = useState("");
@@ -42,7 +43,7 @@ export default function LoginScreen() {
       return;
     }
     setLoading(false);
-    router.replace("/(tabs)");
+    router.replace((redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/(tabs)") as Href);
   };
 
   return (

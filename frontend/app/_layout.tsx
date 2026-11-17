@@ -1,7 +1,7 @@
 import "react-native-reanimated";
 import { useEffect } from "react";
 import { Platform, View } from "react-native";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { type Href, Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { LogBox } from "react-native";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -46,10 +46,17 @@ if (Platform.OS === "android") {
   });
 }
 
+// Only allow in-app absolute paths (blocks open redirects like "//evil.com" or "https://...").
+function safeRedirect(value?: string) {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : undefined;
+}
+
 function AuthGate() {
   const { token, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const pathname = usePathname();
+  const { redirect } = useGlobalSearchParams<{ redirect?: string }>();
 
   useEffect(() => {
     if (loading) return;
@@ -57,9 +64,11 @@ function AuthGate() {
     const isAuthScreen = seg0 === "login" || seg0 === "register";
     const isPublicScreen = isAuthScreen || seg0 === "privacy" || seg0 === "child-safety" || seg0 === "about";
     if (!token && !isPublicScreen) {
-      router.replace("/login");
+      // Remember where the user was headed (e.g. a shared /vihar/<id> link) so login can return there.
+      const target = pathname && pathname !== "/" ? pathname : undefined;
+      router.replace(target ? { pathname: "/login", params: { redirect: target } } : "/login");
     } else if (token && isAuthScreen) {
-      router.replace("/(tabs)");
+      router.replace((safeRedirect(redirect) ?? "/(tabs)") as Href);
     }
   }, [token, loading, segments]);
 
